@@ -26,11 +26,11 @@ For existing projects, prompts go to the Context Agent first.
 ## Architecture Snapshot
 
 - Orchestration: LangGraph
-- Protocol boundary: A2C (Agent-to-Context)
-- Model and embeddings: Gemini
-- Vector retrieval: Qdrant
-- Audit/system of record: PostgreSQL
-- Relationship reasoning: Neo4j
+- Agent boundary: A2A
+- Model and embeddings: Gemini + Gemini Embedding 2 multimodal
+- Vector retrieval: Qdrant Cloud
+- Audit/system of record: Supabase
+- Relationship reasoning: Neo4j Aura
 
 ## Why This Matters
 
