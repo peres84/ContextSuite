@@ -147,3 +147,6 @@ pnpm-lock.yaml.bak
 !docs/**
 docs/plan/
 docs/plan/**
+
+#ignoring mcp docs
+.mcp.json
