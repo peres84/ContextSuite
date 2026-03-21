@@ -1,0 +1,147 @@
+# -----------------------------
+# Production .gitignore
+# -----------------------------
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+
+# Logs and runtime files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pid
+*.seed
+*.stackdump
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Private keys and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Cloud and service credentials
+*.credentials
+credentials.json
+service-account*.json
+firebase-adminsdk*.json
+gcp-key*.json
+aws-credentials*
+
+# Token and secret dumps
+*.secret
+*.secrets
+secrets/
+
+# Node.js
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.next/
+.nuxt/
+.svelte-kit/
+dist/
+build/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.python-version
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Java / Kotlin / Gradle
+.gradle/
+out/
+*.class
+
+# Go
+bin/
+*.test
+
+# Rust
+target/
+
+# .NET
+bin/
+obj/
+
+# C/C++
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Terraform / IaC
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+
+# Docker and containers
+.docker/
+docker-data/
+
+# Testing artifacts
+playwright-report/
+test-results/
+junit.xml
+
+# Package manager lock backups
+package-lock.json.bak
+yarn.lock.bak
+pnpm-lock.yaml.bak
+
+# Archives and binaries
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+
+# Keep core docs and plan files tracked
+!README.md
+!docs/
+!docs/**
