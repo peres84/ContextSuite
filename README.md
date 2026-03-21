@@ -1,55 +1,96 @@
-﻿# ContextSuite
+# ContextSuite
 
-ContextSuite is an AI governance and memory layer for coding assistants.
+<p align="center">
+  <strong>Context, governance, and memory for AI coding workflows</strong>
+</p>
 
-It helps teams prevent repeated regressions by routing prompts through a Context Agent that reviews plans against historical issues, constraints, approvals, and risk policies before execution.
+<p align="center">
+  <a href="#license"><img src="https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge" alt="MIT License" /></a>
+  <a href="#workflow"><img src="https://img.shields.io/badge/Workflow-A2A%20First-2563eb?style=for-the-badge" alt="A2A First Workflow" /></a>
+  <a href="#mvp-goal"><img src="https://img.shields.io/badge/Status-Hackathon%20MVP-f59e0b?style=for-the-badge" alt="Hackathon MVP" /></a>
+  <a href="#architecture-snapshot"><img src="https://img.shields.io/badge/Orchestration-LangGraph-111827?style=for-the-badge" alt="LangGraph Orchestration" /></a>
+</p>
 
-## Current Repository Scope
+ContextSuite is a context, governance, and memory layer for AI coding workflows.
 
-This repository is intentionally document-focused for the hackathon stage.
+Instead of sending prompts directly to a coding assistant, the user sends them to a Context Agent first. The Context Agent gathers project memory, checks constraints and prior incidents, reviews the plan, and only then hands execution to a coding assistant through a simple A2A-based local bridge.
 
-Tracked content is centered on planning documents in:
+<p align="center">
+  <img src="https://img.shields.io/badge/context-memory-0f766e?style=flat-square" alt="Context memory" />
+  <img src="https://img.shields.io/badge/risk-reviewed-7c3aed?style=flat-square" alt="Risk reviewed" />
+  <img src="https://img.shields.io/badge/local-agent%20client-enabled-1d4ed8?style=flat-square" alt="Local Agent Client enabled" />
+  <img src="https://img.shields.io/badge/agentic-ai-334155?style=flat-square" alt="Agentic AI" />
+</p>
 
-- `docs/plan/`
+<p align="center">
+  <img src="https://img.shields.io/badge/Gemini_Embedding_2-Multimodal-4285F4?style=flat-square&logo=google&logoColor=white" alt="Gemini Embedding 2 Multimodal" />
+  <img src="https://img.shields.io/badge/Supabase-Managed_Postgres-3ECF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Qdrant-Cloud-FF6B6B?style=flat-square" alt="Qdrant Cloud" />
+  <img src="https://img.shields.io/badge/Neo4j-Aura-0A66C2?style=flat-square&logo=neo4j&logoColor=white" alt="Neo4j Aura" />
+</p>
 
-## Core Idea
+<p align="center">
+  <img src="https://img.shields.io/badge/Coding_Agents-Codex%20%7C%20Claude%20Code%20%7C%20Cursor-4b5563?style=flat-square" alt="Supported coding agents" />
+</p>
 
-For existing projects, prompts go to the Context Agent first.
+## Workflow
 
-1. Context Agent retrieves issue history and constraints.
-2. Code agent submits a structured implementation plan.
-3. Context Agent reviews risk and policy compliance.
-4. Approval is automatic for low-risk or delegated to humans for medium/high-risk.
-5. Code execution is allowed only after approval.
-6. Indexing happens only for issue-related outcomes.
+![ContextSuite workflow](docs/workflow.png)
+
+## Why It Exists
+
+AI coding tools are fast, but they often lose important project context over time. Teams repeat bugs, miss constraints, and forget why past decisions were made. ContextSuite keeps that memory available at the moment a change is requested.
+
+## MVP Goal
+
+Build a demo where a user sends a prompt to ContextSuite, ContextSuite reviews the task, then forwards an approved job over A2A to a Local Agent Client that runs Codex, Claude Code, or Cursor CLI and returns the result.
+
+## How The MVP Works
+
+1. User sends a prompt to the Context Agent.
+2. Context Agent retrieves relevant history, constraints, and prior issues.
+3. Context Agent prepares or reviews an implementation plan.
+4. Low-risk tasks are auto-approved; riskier ones can require human approval.
+5. The approved task is sent over A2A to the ContextSuite Local Agent Client.
+6. The Local Agent Client runs the selected coding assistant CLI.
+7. Results, approvals, and important issue-related outcomes are stored for future runs.
 
 ## Architecture Snapshot
 
 - Orchestration: LangGraph
-- Agent boundary: A2A
+- Agent-to-agent communication: A2A
+- Local execution bridge: ContextSuite Local Agent Client
+- Coding assistants for MVP: Codex CLI, Claude Code CLI, Cursor CLI
 - Model and embeddings: Gemini + Gemini Embedding 2 multimodal
+- Relational system of record: Supabase
 - Vector retrieval: Qdrant Cloud
-- Audit/system of record: Supabase
-- Relationship reasoning: Neo4j Aura
+- Relationship graph: Neo4j Aura
 
-## Why This Matters
+## A2A And MCP
 
-Most AI coding workflows are fast but context-fragile across long sessions.
-ContextSuite preserves the "why" behind past fixes, reduces repeated incidents, and improves trust in AI-assisted changes.
+ContextSuite is A2A-first.
 
-## Main Planning Document
+A2A is the protocol between the Context Agent and the Local Agent Client. MCP is optional and internal to the Context Agent when extra tools are needed. It is not the main transport for coding-agent execution.
 
-Use the extended plan here:
+## Current Repository Focus
+
+This repository is currently focused on planning and MVP architecture for the hackathon.
+
+Main documents:
 
 - `docs/plan/CONTEXTSUITE_EXTENDED_PLAN.md`
+- `docs/plan/CONTEXTSUITE_MVP_IMPLEMENTATION_ARCHITECTURE.md`
 
-## Status
+## Near-Term Outcome
 
-Hackathon MVP planning in progress.
+Prove a simple end-to-end flow:
 
-Focus order:
+- one prompt in
+- one reviewed plan
+- one approved A2A task
+- one coding assistant execution
+- one stored memory trail
 
-1. End-to-end Context Agent workflow demo.
-2. Issue-driven indexing correctness.
-3. Approval and policy behavior.
-4. Optional provider-facing onboarding UX.
+## License
+
+Released under the [MIT License](LICENSE).
