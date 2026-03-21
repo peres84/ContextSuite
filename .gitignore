@@ -141,7 +141,9 @@ pnpm-lock.yaml.bak
 *.7z
 *.rar
 
-# Keep core docs and plan files tracked
+# Keep core docs tracked, but ignore docs/plan
 !README.md
 !docs/
 !docs/**
+docs/plan/
+docs/plan/**
