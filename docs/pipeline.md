@@ -7,6 +7,11 @@ The pipeline can now be exercised through either:
 - The legacy HTTP endpoints used by the current CLI/demo flow
 - The real A2A JSON-RPC surface at `/a2a/{assistant_id}`
 
+Current transport note:
+
+- The interactive `contextsuite` CLI still uses the legacy `POST /tasks/send` path.
+- Use the direct A2A examples below when you want to test the real wire protocol itself.
+
 ## Prerequisites
 
 1. **Python 3.12+** and **uv** installed
@@ -28,6 +33,20 @@ uv run context-agent
 # Start the CLI Agent server in a second terminal
 uv run cli-agent
 ```
+
+## Choose A Test Mode
+
+Before seeding demo data, decide what you want to validate:
+
+- Real local project behavior: skip demo ingestion and point the CLI app at your real workspace with `-p`
+- Demo retrieval behavior: seed `acme/payments` so retrieval and saved-memory behavior are visible
+
+Important note:
+
+- The path passed with `-p` controls the local execution workspace.
+- The repository label passed with `-r` is metadata unless that repository has actually been ingested.
+
+For exact prompts and exact payloads for both modes, use `docs/user-guideline.md`.
 
 ## Service Connectivity Tests
 
@@ -55,6 +74,8 @@ Neo4j note:
 ## Seeding Demo Data
 
 The demo data represents a fictional `acme/payments` repository with incidents, ADRs, constraints, and code summaries.
+
+Skip this section if you are testing a real local project and want minimal retrieval noise.
 
 ### Using the ingestion pipeline (recommended)
 

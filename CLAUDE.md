@@ -1,56 +1,59 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides repository guidance for Claude Code and similar coding agents.
 
-## What Is This
+## What This Repo Is
 
-ContextSuite is a context, governance, and memory layer for AI coding workflows. A user sends a prompt to a Context Agent, which gathers project memory, checks constraints, reviews a plan, then forwards approved work over A2A to a Local Agent Client that runs a coding assistant CLI (Codex, Claude Code, or Cursor).
+ContextSuite is a context, governance, and memory layer for AI coding workflows.
 
-## Key Documents
+Today the product supports:
 
-- `AGENT.md` — agent-facing working brief with locked decisions and working rules
-- `docs/plan.md` — **tracked** MVP execution checklist (read before implementation work)
-- `docs/plan/CONTEXTSUITE_MVP_IMPLEMENTATION_ARCHITECTURE.md` — implementation architecture (git-ignored)
-- `docs/plan/CONTEXTSUITE_EXTENDED_PLAN.md` — broader product context (git-ignored)
+- legacy HTTP for the current CLI and demo flow
+- real A2A JSON-RPC for interoperable agent-to-agent calls
+- A2A-first Context Agent to CLI Agent dispatch with legacy fallback
 
-Always read `docs/plan.md` before starting implementation. Pick the next unchecked task from the current phase.
+## Read These First
 
-## Locked Architecture Decisions
+- `README.md`
+- `docs/workflow.md`
+- `docs/pipeline.md`
+- `docs/user-guideline.md`
+- `docs/architecture.md`
+- `KNOWN_ISSUES.md`
+- `docs/plan.md`
+
+## Current Architectural Rules
 
 Do not change these unless the user explicitly asks:
 
-- **A2A-first**: A2A is the protocol between Context Agent and Local Agent Client
-- **MCP is optional/internal** to the Context Agent only — never use it as the main transport
-- **Cloud stack**: Supabase (relational), Qdrant Cloud (vector), Neo4j Aura (graph)
-- **Embeddings**: Gemini Embedding 2 multimodal
-- **Orchestration**: LangGraph
-- **Language**: Python for backend and agent code
+- A2A JSON-RPC is the primary agent-to-agent interface.
+- Legacy HTTP routes remain for compatibility.
+- Keep business logic in the existing workflow and use protocol adapters for compatibility work.
+- MCP is optional/internal only, not the main transport to the executor.
+- Supabase, Qdrant Cloud, and Neo4j Aura remain the selected stores.
+- Gemini Embedding 2 remains the embedding model.
+- Backend and agent code stays Python-first.
 
-## Build Priorities
+## A2A Reality Check
 
-1. Shared contracts and A2A message schemas
-2. Context Agent skeleton and core workflow
-3. Local Agent Client skeleton
-4. One working coding assistant adapter (prefer depth over breadth)
-5. Persistence and retrieval wiring
-6. Demo UI or CLI
-7. Additional adapters and polish
+Implemented:
 
-## MCP Servers
+- agent card discovery
+- `/a2a/{assistant_id}`
+- `message/send`
+- `tasks/get`
+- approval continuation over A2A
 
-Supabase MCP is connected for database operations. Use `docs-langchain` MCP for LangChain/LangGraph docs and `google-docs` MCP for Gemini API guidance.
+Not implemented:
 
-## Ignored Directories
+- `message/stream`
+- push notifications
+- background async A2A execution
 
-- `frontend/` — legacy demo app, not used for the MVP. Do not modify or reference it.
+## Working Conventions
 
-## Project Structure
-
-- `docs/architecture.md` — defines the folder architecture and package layout for the project. Read this before creating new files or directories.
-
-## Conventions
-
-- Keep A2A payloads and execution states as explicit typed contracts
-- Update checkboxes in `docs/plan.md` when completing tasks
-- Add discovered subtasks to `docs/plan.md` in the correct phase
-- Do not replace managed cloud services with self-hosted alternatives
+- Preserve approvals, memory saving, and adapter behavior.
+- When protocol and local types disagree, align to the real wire protocol.
+- Update docs and tests with any route or contract change.
+- Remember that `-p` points to a local execution workspace, while `-r` is only repository metadata unless that repository was ingested.
+- Do not modify `frontend/` unless the user explicitly asks for frontend work.

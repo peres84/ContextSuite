@@ -160,11 +160,30 @@ uv sync --all-packages
 # Start the Context Agent (port 8000)
 uv run context-agent
 
-# Start the CLI Agent (port 8001) — in a second terminal
+# Start the CLI Agent (port 8001) - in a second terminal
 uv run cli-agent
 ```
 
-Then seed the demo data and initialize a local demo workspace:
+Then choose one of these two manual test modes.
+
+### Option A: Test A Real Local Project
+
+Use this when you want to see the workflow on your own repository without seeding demo memory.
+
+```bash
+uv run pytest -q
+uv run contextsuite -p "D:\\path\\to\\your-real-project" init -r "local/manual-test" -a codex
+uv run contextsuite -p "D:\\path\\to\\your-real-project" chat "Add a small utility function named format_iso_timestamp and add tests for it. Keep the change isolated and avoid refactoring unrelated files."
+```
+
+Important note:
+
+- `-p` sets the local execution workspace.
+- `-r` is only repository metadata unless that repository was separately ingested.
+
+### Option B: Test The Demo Repository With Retrieval Memory
+
+Use this when you want the full seeded `acme/payments` demo flow with retrieval context and saved issue memory.
 
 ```bash
 uv run pytest -q
@@ -175,6 +194,8 @@ uv run python scripts/test_services.py
 uv run contextsuite -p ./demo-project init -r "acme/payments" -a codex
 uv run contextsuite -p ./demo-project chat
 ```
+
+For the exact prompts, exact legacy HTTP requests, and exact A2A JSON-RPC payloads for both modes, use `docs/user-guideline.md`.
 
 ## Available Commands
 

@@ -1,195 +1,280 @@
 # Project Architecture
 
-This document defines the folder structure and package layout for the ContextSuite monorepo.
+This document describes the current runtime architecture of the ContextSuite monorepo after the real A2A compatibility work.
+
+## System Overview
+
+ContextSuite has four main runtime pieces:
+
+1. `context-agent`: the cloud-side orchestrator that receives prompts, retrieves context, applies governance, and dispatches approved work.
+2. `cli-agent`: the local execution bridge that receives approved tasks and runs Codex, Claude Code, or Cursor on the developer machine.
+3. `cli-app`: the human-facing terminal client used for demos and manual operator testing.
+4. `shared`: typed contracts used by all three packages, including A2A models and agent cards.
+
+The key architectural rule is unchanged:
+
+- Business logic stays in the existing workflow.
+- Protocol handling is layered on top as an adapter.
+- Real A2A is now supported on the wire, while legacy HTTP remains available for compatibility.
+
+## Runtime Flow
+
+The end-to-end flow is:
+
+1. A client sends a request to the Context Agent through either:
+   - legacy HTTP `POST /tasks/send`, or
+   - A2A JSON-RPC `POST /a2a/contextsuite-context-agent`
+2. The Context Agent runs the LangGraph workflow:
+   - `intake`
+   - `retrieve`
+   - `plan`
+   - `classify`
+   - `approve`
+   - `package`
+   - `dispatch`
+   - `save_memory`
+3. If the task is approved, the Context Agent packages a shared `TaskPayload`.
+4. The dispatch node sends that payload to the CLI Agent by:
+   - preferring A2A JSON-RPC `POST /a2a/contextsuite-cli-agent`
+   - falling back to legacy `POST /tasks/receive` if needed
+5. The CLI Agent selects the requested adapter and runs the local coding assistant CLI.
+6. The Context Agent stores outcomes and durable issue memory, then exposes the final state through:
+   - the legacy response body, or
+   - A2A `tasks/get`
+
+## Transport Surfaces
+
+### Context Agent
+
+External routes:
+
+- `GET /.well-known/agent-card.json`
+- `GET /.well-known/agent.json`
+- `GET /a2a/{assistant_id}/.well-known/agent-card.json`
+- `POST /a2a/contextsuite-context-agent`
+- `POST /tasks/send`
+- `POST /tasks/{run_id}/approval`
+- `GET /health`
+
+Supported A2A methods:
+
+- `message/send`
+- `tasks/get`
+
+### CLI Agent
+
+External routes:
+
+- `GET /.well-known/agent-card.json`
+- `GET /.well-known/agent.json`
+- `GET /a2a/{assistant_id}/.well-known/agent-card.json`
+- `POST /a2a/contextsuite-cli-agent`
+- `POST /tasks/receive`
+- `GET /health`
+
+Supported A2A methods:
+
+- `message/send`
+- `tasks/get`
+
+### Current Compatibility Limits
+
+Implemented now:
+
+- agent card discovery
+- A2A `message/send`
+- A2A `tasks/get`
+- approval continuation through a follow-up A2A `message/send`
+- Context Agent to CLI Agent A2A dispatch with safe legacy fallback
+
+Still partial:
+
+- `message/stream`
+- push notifications
+- non-blocking/background A2A execution
+- persisted CLI Agent task state across process restarts
 
 ## Monorepo Layout
 
-```
+```text
 heilbronn-hackathon/
-├── packages/
-│   ├── shared/                      # Shared contracts, types, and A2A schemas
-│   │   ├── contextsuite_shared/
-│   │   │   ├── __init__.py
-│   │   │   ├── a2a/                 # A2A message schemas
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── task.py          # Task payload schema
-│   │   │   │   ├── status.py        # Status update schema
-│   │   │   │   ├── result.py        # Result payload schema
-│   │   │   │   └── error.py         # Error payload schema
-│   │   │   ├── agent_card/          # Agent Card definitions
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── context_agent.py
-│   │   │   │   └── cli_agent.py
-│   │   │   └── types/               # Common types shared across packages
-│   │   │       ├── __init__.py
-│   │   │       ├── approval.py      # Approval and risk-level types
-│   │   │       ├── run.py           # Run and trace ID types
-│   │   │       └── prompt.py        # Prompt and plan types
-│   │   └── pyproject.toml
-│   │
-│   ├── context-agent/               # Context Agent — cloud-side orchestration
-│   │   ├── contextsuite_agent/
-│   │   │   ├── __init__.py
-│   │   │   ├── server.py            # HTTP/A2A server (FastAPI)
-│   │   │   ├── workflow/            # LangGraph workflow
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── graph.py         # Main LangGraph graph
-│   │   │   │   ├── state.py         # Graph state definition
-│   │   │   │   └── nodes/           # Individual workflow nodes
-│   │   │   │       ├── __init__.py
-│   │   │   │       ├── intake.py
-│   │   │   │       ├── retrieve.py
-│   │   │   │       ├── plan.py
-│   │   │   │       ├── risk.py
-│   │   │   │       ├── approve.py
-│   │   │   │       └── dispatch.py
-│   │   │   ├── retrieval/           # Context retrieval
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── vector.py        # Qdrant Cloud client
-│   │   │   │   ├── graph.py         # Neo4j Aura client
-│   │   │   │   └── ranking.py       # Result ranking across sources
-│   │   │   ├── persistence/         # Supabase data access
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── runs.py
-│   │   │   │   ├── approvals.py
-│   │   │   │   └── prompts.py
-│   │   │   ├── embeddings/          # Gemini Embedding 2 integration
-│   │   │   │   └── __init__.py
-│   │   │   └── config.py            # Environment config loader
-│   │   └── pyproject.toml
-│   │
-│   └── cli-agent/                   # Local Agent Client — runs on dev machine
-│       ├── contextsuite_cli/
-│       │   ├── __init__.py
-│       │   ├── server.py            # Local A2A listener
-│       │   ├── executor/            # Task execution lifecycle
-│       │   │   ├── __init__.py
-│       │   │   ├── lifecycle.py     # State machine for task execution
-│       │   │   └── stream.py        # Output streaming back to Context Agent
-│       │   ├── adapters/            # Coding assistant CLI adapters
-│       │   │   ├── __init__.py
-│       │   │   ├── base.py          # Base adapter interface
-│       │   │   ├── codex.py         # Codex CLI adapter
-│       │   │   ├── claude.py        # Claude Code CLI adapter
-│       │   │   └── cursor.py        # Cursor CLI adapter
-│       │   ├── workspace/           # Workspace and repo targeting
-│       │   │   └── __init__.py
-│       │   └── config.py            # Local environment config
-│       └── pyproject.toml
-│
-├── docs/
-│   ├── architecture.md              # This file
-│   ├── plan.md                      # MVP execution checklist
-│   ├── workflow.png                 # Workflow diagram
-│   └── plan/                        # Extended planning docs (git-ignored)
-│
-├── frontend/                        # Legacy demo app (not used for MVP)
-├── media/                           # Branding assets
-│
-├── pyproject.toml                   # Root project config (uv workspace)
-├── uv.lock                          # uv lockfile
-├── .python-version                  # Python version pin
-├── .env.example                     # Environment variable template
-├── .gitignore
-├── CLAUDE.md
-├── AGENT.md
-├── README.md
-└── LICENSE
+|-- packages/
+|   |-- shared/
+|   |   |-- contextsuite_shared/
+|   |   |   |-- a2a/
+|   |   |   |   |-- error.py
+|   |   |   |   |-- payload.py
+|   |   |   |   |-- result.py
+|   |   |   |   |-- rpc.py
+|   |   |   |   |-- status.py
+|   |   |   |   |-- task.py
+|   |   |   |   `-- utils.py
+|   |   |   |-- agent_card/
+|   |   |   |   |-- cli_agent.py
+|   |   |   |   `-- context_agent.py
+|   |   |   `-- types/
+|   |   |       |-- approval.py
+|   |   |       |-- prompt.py
+|   |   |       `-- run.py
+|   |   `-- tests/
+|   |
+|   |-- context-agent/
+|   |   |-- contextsuite_agent/
+|   |   |   |-- a2a.py
+|   |   |   |-- config.py
+|   |   |   |-- server.py
+|   |   |   |-- embeddings/
+|   |   |   |-- ingestion/
+|   |   |   |   |-- chunker.py
+|   |   |   |   |-- pipeline.py
+|   |   |   |   `-- sources.py
+|   |   |   |-- persistence/
+|   |   |   |   |-- approvals.py
+|   |   |   |   |-- client.py
+|   |   |   |   |-- documents.py
+|   |   |   |   |-- prompts.py
+|   |   |   |   `-- runs.py
+|   |   |   |-- retrieval/
+|   |   |   |   |-- context.py
+|   |   |   |   |-- graph.py
+|   |   |   |   |-- ranking.py
+|   |   |   |   `-- vector.py
+|   |   |   `-- workflow/
+|   |   |       |-- graph.py
+|   |   |       |-- resume.py
+|   |   |       |-- state.py
+|   |   |       `-- nodes/
+|   |   |           |-- approve.py
+|   |   |           |-- classify.py
+|   |   |           |-- dispatch.py
+|   |   |           |-- intake.py
+|   |   |           |-- memory.py
+|   |   |           |-- package.py
+|   |   |           |-- plan.py
+|   |   |           `-- retrieve.py
+|   |   `-- tests/
+|   |
+|   |-- cli-agent/
+|   |   |-- contextsuite_cli/
+|   |   |   |-- a2a.py
+|   |   |   |-- config.py
+|   |   |   |-- server.py
+|   |   |   |-- task_store.py
+|   |   |   |-- adapters/
+|   |   |   |   |-- base.py
+|   |   |   |   |-- claude_code.py
+|   |   |   |   |-- codex.py
+|   |   |   |   |-- cursor.py
+|   |   |   |   `-- registry.py
+|   |   |   `-- executor/
+|   |   |       `-- lifecycle.py
+|   |   `-- tests/
+|   |
+|   `-- cli-app/
+|       |-- contextsuite_app/
+|       |   |-- attachments.py
+|       |   |-- cli.py
+|       |   |-- renderer.py
+|       |   `-- session.py
+|       `-- pyproject.toml
+|
+|-- scripts/
+|-- docs/
+|   |-- architecture.md
+|   |-- pipeline.md
+|   |-- user-guideline.md
+|   `-- workflow.md
+|-- AGENT.md
+|-- CLAUDE.md
+`-- README.md
 ```
 
-Current notes:
-
-- `packages/cli-app` is the interactive terminal client exposed as `contextsuite`
-- `scripts/` contains service tests, demo ingestion, Neo4j setup, and scenario runners
-- `docs/user-guideline.md` is the practical end-to-end setup guide
-- `docs/plan/` contains planning assets and is committed in this repo
-
-## Package Descriptions
+## Package Responsibilities
 
 ### `packages/shared`
 
-Shared contracts consumed by both the Context Agent and the CLI Agent. Uses Pydantic models for all schemas. Contains:
+Shared contracts only. No transport logic and no cloud-specific orchestration.
 
-- A2A message schemas (task, status, result, error)
-- Agent Card definitions
-- Common types (approval, risk levels, run/trace IDs, prompts)
+Contains:
 
-No runtime dependencies on cloud services.
+- A2A task, status, result, payload, error, and JSON-RPC models
+- agent card definitions for both agents
+- shared run, approval, and prompt types
 
 ### `packages/context-agent`
 
-The cloud-side Context Agent. Receives user prompts, retrieves context, generates/reviews plans, classifies risk, routes approvals, and dispatches approved tasks over A2A to the CLI Agent.
+The cloud-side orchestrator.
 
-Key dependencies:
+Responsibilities:
 
-- **LangGraph** for workflow orchestration
-- **FastAPI** for the HTTP/A2A server
-- **Supabase Python client** for relational persistence
-- **Qdrant client** for vector retrieval
-- **Neo4j Python driver** for graph relationships
-- **Google GenAI SDK** for Gemini Embedding 2
+- request intake
+- repository lookup
+- context retrieval from Supabase, Qdrant, and Neo4j
+- plan generation
+- risk classification and approval decisions
+- A2A and legacy HTTP request handling
+- dispatch to the CLI Agent
+- persistence of runs, plans, approvals, outcomes, and saved issue memory
+
+Important files:
+
+- `server.py`: FastAPI app, legacy routes, discovery routes
+- `a2a.py`: A2A JSON-RPC adapter layer
+- `workflow/graph.py`: LangGraph definition
+- `workflow/resume.py`: approval resume path for persisted runs
+- `workflow/nodes/dispatch.py`: A2A-first CLI dispatch adapter
 
 ### `packages/cli-agent`
 
-The installable Local Agent Client that runs on the developer's machine. Receives A2A tasks from the Context Agent, selects and runs a coding assistant CLI, streams progress, and returns results.
+The local execution bridge.
 
-Key dependencies:
+Responsibilities:
 
-- **FastAPI** for the local A2A listener
-- Subprocess management for coding assistant CLIs (Codex, Claude Code, Cursor)
+- expose a local A2A endpoint and a legacy compatibility route
+- receive approved tasks from the Context Agent
+- run the selected coding assistant CLI
+- return normalized execution results
+- keep short-lived task state for `tasks/get`
+
+Important files:
+
+- `server.py`: FastAPI app and route registration
+- `a2a.py`: CLI-side A2A JSON-RPC adapter
+- `task_store.py`: in-memory task tracking for polling
+- `executor/lifecycle.py`: adapter execution flow
+- `adapters/*.py`: concrete assistant integrations
 
 ### `packages/cli-app`
 
-The terminal client used by a human tester or demo operator. It initializes a local project, sends prompts to the Context Agent, and renders plans, approvals, and execution results in the terminal.
+The human-facing terminal application.
 
-Key dependencies:
+Responsibilities:
 
-- **Click** for commands
-- **Rich** for terminal rendering
-- **prompt-toolkit** for interactive chat and history
+- initialize local workspace metadata
+- send prompts to the Context Agent
+- render plan, risk, approval, and outcome information
+- support attachments and session display
 
-## Dependency Graph
+Current note:
 
-```
-shared ← context-agent
-shared ← cli-agent
-```
+- The CLI app still uses the legacy `POST /tasks/send` path.
+- Direct A2A protocol testing is currently done with raw HTTP requests or external clients, not through the CLI app.
 
-Both `context-agent` and `cli-agent` depend on `shared`. They do not depend on each other — they communicate exclusively over A2A at runtime.
+## Data Ownership
 
-Dependency note:
+| Data | Authoritative Store | Notes |
+|---|---|---|
+| Runs, prompts, plans, approvals, outcomes | Supabase | Main transactional system of record |
+| Repository metadata | Supabase | Repository names are labels unless separately ingested |
+| Context snapshots | Supabase | Stores retrieval summary and structured sources per run |
+| Semantic vectors | Qdrant | Derived from ingested source material and saved issue memory |
+| Graph relationships | Neo4j | Related issues, files, and constraints |
+| Durable issue memory | Supabase plus Qdrant | Saved after issue-related runs for future retrieval |
 
-- `shared` is consumed by `context-agent`, `cli-agent`, and `cli-app`
-- `context-agent` and `cli-agent` communicate over A2A at runtime rather than direct imports
+## Architectural Rules
 
-## Tooling
-
-- **uv** — package manager and workspace tool
-- **Ruff** — linting and formatting
-- **pytest** — testing
-- **Python 3.12+**
-
-## Data Ownership Rules
-
-Each data store has a clear role. Data is authoritative in one store and derived in the others.
-
-| Data | Authoritative Store | Derived In | Notes |
-|---|---|---|---|
-| Runs, prompts, plans, approvals, outcomes | **Supabase** | — | System of record for all transactional data |
-| Repositories (metadata) | **Supabase** | Neo4j (as nodes) | Supabase owns the record; Neo4j stores relationships |
-| Semantic embeddings (docs, issues, code) | **Qdrant** | — | Vectors generated from source content via Gemini |
-| Structural relationships (files, entities, issues) | **Neo4j** | — | Graph-native queries for connected context |
-| Ingestion metadata (what was indexed, when) | **Supabase** | — | Tracks what has been pushed to Qdrant/Neo4j |
-
-**Write rules:**
-- All run lifecycle writes go to Supabase first
-- Embeddings are written to Qdrant during ingestion, read during retrieval
-- Graph nodes/edges are written to Neo4j during ingestion, read during retrieval
-- If Qdrant or Neo4j data is lost, it can be re-derived from source + Supabase metadata
-
-## Naming Conventions
-
-- Package import names use underscores: `contextsuite_shared`, `contextsuite_agent`, `contextsuite_cli`
-- Source files use snake_case
-- Pydantic models for all data contracts
-- Each module has an `__init__.py` that re-exports the public API
+- Keep workflow and business logic in the existing LangGraph pipeline.
+- Add or change protocol compatibility through adapter layers first.
+- Do not remove the legacy HTTP endpoints unless the migration is explicit and tested.
+- When A2A and existing internal types disagree, align the implementation to the real wire protocol rather than only renaming local models.
+- Keep documentation and tests in sync with protocol changes.

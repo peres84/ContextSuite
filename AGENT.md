@@ -1,147 +1,97 @@
 # AGENT.md
 
-This file is the agent-focused working brief for this repository.
+This file is the agent-facing working brief for this repository.
 
-Use it together with the human-facing README. When working in this repo, use `docs/plan.md` as the tracked execution checklist for the MVP.
+Use it with the human-facing `README.md`. For implementation work, read the current workflow docs before changing architecture or transport behavior.
 
-## Project Overview
+## Project State
 
 ContextSuite is a context, governance, and memory layer for AI coding workflows.
 
-The MVP goal is to prove this end-to-end flow:
+The current shipped flow is:
 
-1. A user sends a prompt to the Context Agent.
-2. The Context Agent retrieves relevant memory, constraints, and prior incidents.
-3. The Context Agent generates or reviews a plan and applies risk checks.
-4. Approved work is sent over A2A to the ContextSuite Local Agent Client.
-5. The Local Agent Client runs a coding assistant CLI such as Codex, Claude Code, or Cursor.
-6. The result, approvals, and useful memory are stored for future runs.
+1. A prompt reaches the Context Agent through legacy HTTP or real A2A JSON-RPC.
+2. The Context Agent retrieves context, generates a plan, classifies risk, and applies approval rules.
+3. Approved work is packaged into a shared `TaskPayload`.
+4. The Context Agent dispatches to the CLI Agent, preferring A2A and falling back to legacy HTTP only for compatibility.
+5. The CLI Agent runs a local coding assistant CLI.
+6. Outcomes and issue memory are persisted for later retrieval.
 
 ## Source Of Truth
 
-Read these documents before making significant implementation changes:
+Read these before making meaningful changes:
 
-- `README.md`: human-facing project summary and workflow image
-- `docs/plan.md`: tracked MVP execution checklist and phase plan
-- `docs/plan/CONTEXTSUITE_MVP_IMPLEMENTATION_ARCHITECTURE.md`: deeper implementation architecture
-- `docs/plan/CONTEXTSUITE_EXTENDED_PLAN.md`: broader product and system context
+- `README.md`: current setup, commands, and operator-facing overview
+- `docs/workflow.md`: workflow stages, approval behavior, and A2A mapping
+- `docs/pipeline.md`: run, test, and verification guide
+- `docs/user-guideline.md`: exact manual test prompts and payloads
+- `docs/architecture.md`: monorepo layout and runtime responsibilities
+- `KNOWN_ISSUES.md`: current gaps and compatibility limits
+- `docs/plan.md`: tracked MVP checklist and remaining work
 
-Important note:
+## Locked Decisions
 
-- `docs/plan.md` is tracked and should be used as the execution checklist
-- `docs/plan/` contains useful reference material, but that folder is git-ignored in this repo
+Do not change these unless the user explicitly asks:
 
-## Locked MVP Decisions
+- Real A2A JSON-RPC is the primary interoperability surface.
+- Legacy HTTP endpoints stay available unless they are intentionally replaced.
+- Business logic stays in the existing workflow; transport compatibility should be solved with adapter layers first.
+- MCP is optional and internal, not the main ContextSuite-to-executor transport.
+- Supabase is the relational system of record.
+- Qdrant Cloud is the vector store.
+- Neo4j Aura is the graph store.
+- Gemini Embedding 2 is used for embeddings.
+- Backend and agent code stays in Python.
 
-These are current architecture constraints and should not be changed unless the user explicitly asks:
+## Current A2A Status
 
-- Use an A2A-first architecture
-- The boundary between ContextSuite and the coding executor is A2A
-- The installable bridge is the ContextSuite Local Agent Client
-- The Local Agent Client controls local coding assistant CLIs
-- MCP is optional and internal to the Context Agent only
-- Do not use MCP as the main transport between ContextSuite and the coding executor
-- Use Gemini Embedding 2 multimodal for embeddings
-- Use Supabase as the relational system of record
-- Use Qdrant Cloud for vector retrieval
-- Use Neo4j Aura for graph relationships
-- Keep the MVP simple and demo-first
-- The final MVP should use real A2A messaging, not a fake placeholder flow
+Implemented now:
 
-## Connected MCP Capabilities (Project Context)
+- agent card discovery
+- `/a2a/{assistant_id}` on both agents
+- JSON-RPC `message/send`
+- JSON-RPC `tasks/get`
+- approval continuation through follow-up A2A `message/send`
+- Context Agent to CLI Agent dispatch over A2A with legacy fallback
 
-The following MCP tools are connected for this project context:
+Still not implemented:
 
-- Supabase: connected
-- docs-langchain: connected
-- google-docs: connected
+- `message/stream`
+- push notifications
+- non-blocking/background A2A execution
+- persisted CLI Agent task state across restarts
 
-How agents should use this:
+## Working Rules
 
-- Use Supabase MCP directly for database operations such as creating tables, updating schema objects, and validating relational structure for MVP data models.
-- Use docs-langchain MCP to find relevant LangChain/LangGraph documentation for implementation details and API usage.
-- Use google-docs MCP to find relevant Google Gemini documentation and model/API guidance when implementing Gemini-based features.
-
-## Default Build Priorities
-
-Unless the user redirects the work, follow this order:
-
-1. Shared contracts and A2A message schemas
-2. Context Agent skeleton and core workflow
-3. Local Agent Client skeleton
-4. One working coding assistant adapter
-5. Persistence and retrieval wiring
-6. Thin demo UI or CLI
-7. Additional adapters and polish
-
-For the first vertical slice, prefer one working adapter over partial support for many adapters.
+- Preserve the existing workflow, approvals, memory saving, and adapter behavior unless the user asks for a product change.
+- If you touch A2A models, align them to the actual wire protocol rather than keeping old custom shapes.
+- If you change routes or contracts, update tests and docs in the same turn.
+- Keep `docs/user-guideline.md`, `docs/workflow.md`, and `KNOWN_ISSUES.md` aligned with real behavior.
+- Do not assume that a local project path means repository memory exists; ingestion is separate from workspace execution.
+- Prefer small adapter-layer changes over broad rewrites.
 
 ## Repository Layout
 
-- `README.md`: human-facing overview
-- `AGENT.md`: agent-facing guidance for this repo
-- `docs/plan.md`: tracked MVP build checklist
-- `docs/workflow.png`: workflow diagram used in the README
-- `docs/plan/`: deeper planning and architecture references
-- `frontend/`: existing Next.js frontend app
-- `media/`: branding assets and favicons
-
-## Frontend Notes (Demo should wait for user request, should be ignored)
-
-There is already a frontend app in `frontend/` built with Next.js and React.
-
-Known commands inside `frontend/`:
-
-- Install dependencies: `pnpm install`
-- Start dev server: `pnpm dev`
-- Build: `pnpm build`
-- Lint: `pnpm lint`
-
-If you change frontend code, use the `frontend/` app rather than creating a second frontend unless the user asks for a new structure.
-
-## Working Rules For Agents
-
-- Read `docs/plan.md` before starting implementation work
-- Pick tasks from the current phase or the recommended vertical slice
-- Keep changes aligned with the locked MVP decisions above
-- Prefer simple, working paths over generalized infrastructure
-- When you complete a meaningful task, update the relevant checkbox in `docs/plan.md`
-- If you discover a missing subtask, add it to `docs/plan.md` in the correct phase
-- If you materially change architecture or scope, update both the relevant docs and `docs/plan.md`
-- Avoid editing ignored planning docs unless the user asks for those docs specifically
-- Do not replace the managed cloud services with self-hosted alternatives unless the user asks
-- Do not shift the main ContextSuite-to-executor communication to MCP
-
-## Code Style And Conventions
-
-- Use Python for all backend and agent code
-- Use Pydantic models for all data contracts and A2A schemas
-- Use Ruff for linting and formatting
-- Preserve the local style of the file you edit
-- Keep modules focused and composable
-- Prefer explicit contracts for A2A payloads and execution states
-- Keep demo copy and UX simple and easy to follow
-- `frontend/` is a legacy demo app — do not modify it
+- `packages/shared/`: shared contracts, A2A models, agent cards, and types
+- `packages/context-agent/`: Context Agent server, workflow, retrieval, persistence, ingestion
+- `packages/cli-agent/`: CLI Agent server, A2A adapter, task store, executor, assistant adapters
+- `packages/cli-app/`: terminal client used for manual and demo flows
+- `scripts/`: setup, ingestion, connectivity checks, and demo helpers
+- `docs/`: operator, workflow, pipeline, and architecture documentation
 
 ## Testing And Validation
 
-- Run `uv run ruff check .` for linting
-- Run `uv run pytest` for tests
-- For contract-heavy code, add schema validation tests early
-- Do not claim tests passed unless you actually ran them
-
-## MVP Definition Of Done
-
-The MVP is done when all of the following are true:
-
-- One prompt can move through the full system from intake to stored result
-- The Context Agent retrieves context before execution
-- The Context Agent performs plan review or plan generation with risk handling
-- A real A2A task is sent to the Local Agent Client
-- At least one coding assistant adapter works end to end
-- Results and memory are persisted in the selected data stores
-- The demo clearly shows why this is better than direct-to-agent prompting
+- Run `uv run ruff check .` for linting when code changes are involved.
+- Run `uv run pytest` when behavior or contracts change.
+- For doc-only updates, do not claim tests were rerun unless you actually reran them.
+- For protocol changes, add or update tests for both the shared contract layer and the server behavior.
 
 ## If You Are Unsure What To Do Next
 
-Start by opening `docs/plan.md` and continue the next unchecked task that helps complete the first end-to-end vertical slice.
+Start with:
+
+1. `docs/workflow.md`
+2. `docs/pipeline.md`
+3. `docs/plan.md`
+
+Then continue the next piece of work that improves the real end-to-end path without breaking the current working product.
