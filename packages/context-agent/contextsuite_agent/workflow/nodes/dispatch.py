@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from uuid import uuid4
 
 import httpx
@@ -30,26 +31,55 @@ def dispatch_payload(*, run_id: str, task_id: str, payload) -> dict:
     a2a_url = f"http://{settings.cli_agent_host}:{settings.cli_agent_port}/a2a/{CLI_AGENT_ID}"
     legacy_url = f"http://{settings.cli_agent_host}:{settings.cli_agent_port}/tasks/receive"
 
-    logger.info("dispatch: sending task=%s to %s (run=%s)", task_id, a2a_url, run_id)
+    logger.info(
+        "dispatch: sending task=%s assistant=%s to %s (run=%s)",
+        task_id,
+        payload.assistant,
+        a2a_url,
+        run_id,
+    )
     RunsRepo.update_run_status(run_id, "working")
 
     try:
+        start = time.perf_counter()
+        logger.info(
+            "dispatch: awaiting CLI Agent response task=%s run=%s blocking=true",
+            task_id,
+            run_id,
+        )
         response = httpx.post(
             a2a_url,
             json=_build_a2a_request(task_id=task_id, payload=payload),
             timeout=330.0,
         )
         if response.status_code not in {404, 405}:
+            elapsed = time.perf_counter() - start
+            logger.info(
+                "dispatch: CLI Agent responded status=%s in %.1fs task=%s run=%s",
+                response.status_code,
+                elapsed,
+                task_id,
+                run_id,
+            )
             response.raise_for_status()
             rpc_data = response.json()
             result_data = _convert_a2a_response(rpc_data)
             return _persist_dispatch_result(run_id=run_id, task_id=task_id, result_data=result_data)
 
         logger.warning("dispatch: A2A route unavailable, falling back to %s", legacy_url)
+        start = time.perf_counter()
         response = httpx.post(
             legacy_url,
             json={"task_id": task_id, "payload": payload.model_dump()},
             timeout=330.0,
+        )
+        elapsed = time.perf_counter() - start
+        logger.info(
+            "dispatch: legacy CLI response status=%s in %.1fs task=%s run=%s",
+            response.status_code,
+            elapsed,
+            task_id,
+            run_id,
         )
         response.raise_for_status()
         result_data = response.json()

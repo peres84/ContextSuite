@@ -14,6 +14,7 @@ class AgentState(TypedDict, total=False):
     prompt: str
     repository: str | None
     assistant: str
+    workspace_path: str | None
 
     # Run tracking
     run_id: str

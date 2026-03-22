@@ -223,3 +223,23 @@ All notable changes to ContextSuite are documented in this file.
   - `demo/src/App.jsx`
   - `demo/src/styles.css`
   The refresh keeps the required green theme while tightening the hero, feature, and principles sections for the green-brand demo
+
+### Phase 15: Demo Launcher, Claude CLI Compatibility, And Clearer Agent UX
+
+- Updated the Claude Code adapter to match the current CLI contract by using `claude --print ...` with the prompt passed positionally instead of the removed `--prompt` flag
+- Added regression coverage for the Claude adapter command path and subprocess integration
+- Propagated `workspace_path` from the `contextsuite` CLI through the Context Agent and A2A packaging layer so the CLI Agent executes in the selected project directory instead of falling back to `.`
+- Added compact shared service logging in `packages/shared/contextsuite_shared/logutils.py`
+- Added request start/finish timing to both HTTP servers and clearer dispatch timing around the blocking Context Agent -> CLI Agent handoff
+- Added periodic subprocess heartbeat logs while Codex, Claude Code, or Cursor are still running so long executions no longer look like silent hangs
+- Added `scripts/start_demo_agents.ps1` to:
+  - stop stale agent processes
+  - free common demo ports
+  - open fresh Context Agent, CLI Agent, and demo prompt terminals
+  - optionally launch the demo site
+- Updated `docs/green-guard-demo.md` with the one-click launcher flow
+- Improved the `contextsuite` CLI output so the user can distinguish:
+  - what came from the Context Agent
+  - what came from the coder agent
+  - the handoff between review, approval, dispatch, and execution
+- Added an `Agent Interaction` panel to the CLI result view so the workflow is visible as a short timeline instead of only separate plan and execution panels

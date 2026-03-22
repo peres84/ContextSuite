@@ -1,4 +1,5 @@
-import { User, HelpCircle, FileEdit, ClipboardCheck } from "lucide-react"
+import { User, HelpCircle, FileEdit, ClipboardCheck, Quote, Star } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 const trustCards = [
   {
@@ -23,12 +24,38 @@ const trustCards = [
   },
 ]
 
+const testimonials = [
+  {
+    quote: "ContextSuite caught a regression that would have cost us a full sprint to fix in production.",
+    author: "Sarah Chen",
+    role: "Tech Lead, FinOps Platform",
+    initials: "SC",
+  },
+  {
+    quote: "The approval trail alone justified the tool—our compliance team finally trusts our AI workflow.",
+    author: "Marcus Rivera",
+    role: "VP Engineering, HealthBridge",
+    initials: "MR",
+  },
+  {
+    quote: "Onboarding new devs went from weeks of tribal knowledge transfer to days with indexed issue memory.",
+    author: "Priya Patel",
+    role: "Engineering Manager, DataStack",
+    initials: "PP",
+  },
+]
+
 export function TrustSection() {
   return (
-    <section id="security" className="py-20 md:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
+    <>
+      {/* Trust & Transparency */}
+      <section id="security" className="py-20 md:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          {/* Section header */}
+          <div className="mx-auto max-w-2xl text-center">
+            <Badge variant="secondary" className="mb-4">
+              Trust &amp; Transparency
+            </Badge>
             <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
               Every decision is traceable
             </h2>
@@ -37,22 +64,68 @@ export function TrustSection() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          {/* Trust cards grid */}
+          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {trustCards.map((card) => (
               <div
                 key={card.title}
-                className="group rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/50"
+                className="group rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/50 hover:shadow-md"
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <card.icon className="h-5 w-5 text-primary" />
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
+                  <card.icon className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground">{card.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{card.description}</p>
+                <h3 className="text-base font-semibold text-foreground">{card.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.description}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Testimonials — standalone section */}
+      <section className="border-y border-primary/10 bg-brand-soft/30 py-20 md:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
+              Testimonials
+            </Badge>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              What teams are saying
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Teams using ContextSuite ship with confidence.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-16 grid max-w-5xl gap-8 md:grid-cols-3">
+            {testimonials.map((testimonial) => (
+              <figure
+                key={testimonial.author}
+                className="relative flex flex-col rounded-2xl border border-primary/15 bg-card p-8 shadow-sm transition-all hover:border-primary/40 hover:shadow-lg"
+              >
+                <Quote className="mb-5 h-8 w-8 text-primary/25" />
+                <div className="mb-4 flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <blockquote className="flex-1 text-base leading-relaxed text-foreground">
+                  &ldquo;{testimonial.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-8 flex items-center gap-3 border-t border-primary/10 pt-5">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                    {testimonial.initials}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{testimonial.author}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   )
 }

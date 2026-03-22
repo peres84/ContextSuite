@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from uuid import uuid4
 
 import uvicorn
@@ -17,6 +18,7 @@ from contextsuite_shared.a2a import (
     TaskPayload,
     TaskQueryParams,
 )
+from contextsuite_shared.logutils import configure_logging
 from fastapi import FastAPI, HTTPException, Request
 
 from contextsuite_cli.a2a import (
@@ -34,16 +36,41 @@ from contextsuite_cli.a2a import (
 from contextsuite_cli.config import settings
 from contextsuite_cli.task_store import get_task, save_task
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s %(levelname)s %(message)s",
-)
+configure_logging(service="cli-agent", level=settings.cli_agent_log_level)
+request_logger = logging.getLogger("server.http")
 
 app = FastAPI(
     title="ContextSuite CLI Agent",
     version="0.1.0",
     description="Local agent client for running coding assistant CLIs",
 )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    request_logger.info("start %s %s", request.method, request.url.path)
+    try:
+        response = await call_next(request)
+    except Exception:
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        request_logger.exception(
+            "fail %s %s in %.0fms",
+            request.method,
+            request.url.path,
+            elapsed_ms,
+        )
+        raise
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    request_logger.info(
+        "done %s %s status=%s in %.0fms",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    return response
 
 
 @app.get("/health")
@@ -177,6 +204,14 @@ async def _handle_message_send(rpc_request: JSONRPCRequest) -> dict:
     context_id = message.context_id or payload.run_id or uuid4().hex
     inbound_message = message.model_copy(update={"task_id": task_id, "context_id": context_id})
 
+    logging.getLogger("server.dispatch").info(
+        "received A2A task=%s assistant=%s run=%s workspace=%s",
+        task_id,
+        payload.assistant,
+        payload.run_id,
+        payload.workspace_path or settings.default_workspace,
+    )
+
     _result, task = await _execute_payload(task_id, payload, inbound_message)
     return jsonrpc_success(rpc_request.id, task.model_dump(by_alias=True, exclude_none=True))
 
@@ -230,6 +265,13 @@ async def _execute_payload(task_id: str, payload: TaskPayload, inbound_message):
     task = working_task(task)
     save_task(task)
 
+    logging.getLogger("server.dispatch").info(
+        "executing task=%s adapter=%s run=%s",
+        task_id,
+        adapter.name,
+        payload.run_id,
+    )
+
     result = await execute_task(task_id, payload, adapter)
     final_task = build_task_from_execution(
         task_id=task.id,
@@ -238,6 +280,12 @@ async def _execute_payload(task_id: str, payload: TaskPayload, inbound_message):
         result=result,
     )
     save_task(final_task)
+    logging.getLogger("server.dispatch").info(
+        "finished task=%s state=%s run=%s",
+        task_id,
+        getattr(result, "state", "failed"),
+        payload.run_id,
+    )
     return result, final_task
 
 
@@ -247,6 +295,8 @@ def main():
         host=settings.cli_agent_host,
         port=settings.cli_agent_port,
         reload=settings.cli_agent_reload,
+        log_config=None,
+        access_log=False,
     )
 
 

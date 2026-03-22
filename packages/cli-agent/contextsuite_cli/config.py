@@ -10,6 +10,7 @@ class CliSettings(BaseSettings):
     cli_agent_host: str = "127.0.0.1"
     cli_agent_port: int = 8001
     cli_agent_reload: bool = False
+    cli_agent_log_level: str = "INFO"
 
     # A2A
     a2a_shared_secret: str = ""

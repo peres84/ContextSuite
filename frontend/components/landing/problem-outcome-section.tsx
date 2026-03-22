@@ -2,7 +2,7 @@ import { ArrowRight, TrendingDown, Clock, FileText } from "lucide-react"
 
 export function ProblemOutcomeSection() {
   return (
-    <section className="border-y border-border bg-muted/30 py-16">
+    <section className="border-y border-border bg-muted/30 py-20 md:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid items-center gap-8 md:grid-cols-3">
           {/* Problem */}
@@ -28,7 +28,7 @@ export function ProblemOutcomeSection() {
         </div>
 
         {/* Metrics */}
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
           <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-6">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <TrendingDown className="h-6 w-6 text-primary" />

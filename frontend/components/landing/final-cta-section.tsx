@@ -4,7 +4,7 @@ import { ArrowRight, Calendar } from "lucide-react"
 
 export function FinalCtaSection() {
   return (
-    <section className="border-y border-border bg-primary py-20">
+    <section className="border-y border-border bg-primary py-20 md:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-primary-foreground md:text-4xl">

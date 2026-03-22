@@ -38,6 +38,7 @@ def prepare_dispatch(state: AgentState) -> AgentState:
         risk_level=state["risk"].level if state.get("risk") else "low",
         assistant=state.get("assistant", "codex"),
         repository=state.get("repository"),
+        workspace_path=state.get("workspace_path"),
     )
 
     RunsRepo.update_run_status(run_id, "dispatched")

@@ -81,6 +81,14 @@ def extract_submission(message: Message, metadata: dict[str, Any] | None = None)
     repository = (
         merged.get("repository") or metadata.get("repository") or message_metadata.get("repository")
     )
+    workspace_path = (
+        merged.get("workspace_path")
+        or merged.get("workspacePath")
+        or metadata.get("workspace_path")
+        or metadata.get("workspacePath")
+        or message_metadata.get("workspace_path")
+        or message_metadata.get("workspacePath")
+    )
     assistant = (
         merged.get("assistant")
         or metadata.get("assistant")
@@ -95,6 +103,7 @@ def extract_submission(message: Message, metadata: dict[str, Any] | None = None)
         "prompt": prompt,
         "repository": repository,
         "assistant": assistant,
+        "workspace_path": workspace_path,
     }
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import uvicorn
 from contextsuite_shared.a2a import (
@@ -14,6 +15,7 @@ from contextsuite_shared.a2a import (
     MessageSendParams,
     TaskQueryParams,
 )
+from contextsuite_shared.logutils import configure_logging
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
@@ -31,10 +33,8 @@ from contextsuite_agent.a2a import (
 )
 from contextsuite_agent.config import settings
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s %(levelname)s %(message)s",
-)
+configure_logging(service="context-agent", level=settings.context_agent_log_level)
+request_logger = logging.getLogger("server.http")
 
 app = FastAPI(
     title="ContextSuite Context Agent",
@@ -43,12 +43,40 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    request_logger.info("start %s %s", request.method, request.url.path)
+    try:
+        response = await call_next(request)
+    except Exception:
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        request_logger.exception(
+            "fail %s %s in %.0fms",
+            request.method,
+            request.url.path,
+            elapsed_ms,
+        )
+        raise
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    request_logger.info(
+        "done %s %s status=%s in %.0fms",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    return response
+
+
 class TaskRequest(BaseModel):
     """Request body for submitting a task to the Context Agent."""
 
     prompt: str
     repository: str | None = None
     assistant: str = "codex"
+    workspace_path: str | None = None
 
 
 class ApprovalResolutionRequest(BaseModel):
@@ -57,6 +85,7 @@ class ApprovalResolutionRequest(BaseModel):
     approved: bool
     reviewer: str = "human-cli"
     reason: str | None = None
+    workspace_path: str | None = None
 
 
 def build_task_response(result: dict) -> dict:
@@ -74,6 +103,7 @@ def build_task_response(result: dict) -> dict:
     return {
         "run_id": result.get("run_id"),
         "trace_id": result.get("trace_id"),
+        "assistant": result.get("assistant"),
         "status": status,
         "plan": result.get("plan"),
         "context_summary": result.get("context_summary"),
@@ -143,6 +173,7 @@ async def send_task(request: TaskRequest):
             "prompt": request.prompt,
             "repository": request.repository,
             "assistant": request.assistant,
+            "workspace_path": request.workspace_path,
         }
     )
     return build_task_response(result)
@@ -169,6 +200,7 @@ async def resolve_approval(run_id: str, request: ApprovalResolutionRequest):
             approved=request.approved,
             reviewer=request.reviewer,
             reason=request.reason,
+            workspace_path=request.workspace_path,
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -305,6 +337,8 @@ def main():
         host=settings.context_agent_host,
         port=settings.context_agent_port,
         reload=settings.context_agent_reload,
+        log_config=None,
+        access_log=False,
     )
 
 

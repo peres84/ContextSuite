@@ -9,22 +9,25 @@ const integrations = [
 
 export function IntegrationsSection() {
   return (
-    <section className="py-16">
+    <section className="py-20 md:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
             Works with your current dev workflow
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            Plug into the tools your team already uses.
           </p>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-6 md:gap-8">
           {integrations.map((integration) => (
             <div
               key={integration.name}
-              className="flex h-16 w-24 items-center justify-center rounded-lg border border-border bg-card transition-colors hover:border-primary/50"
+              className="flex h-16 w-24 items-center justify-center rounded-lg border border-border bg-card transition-all hover:border-primary/50 hover:shadow-sm"
               title={integration.name}
             >
-              <span className="text-lg font-semibold text-muted-foreground">
+              <span className="text-lg font-semibold text-muted-foreground transition-colors group-hover:text-primary">
                 {integration.logo}
               </span>
             </div>

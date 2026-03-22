@@ -28,14 +28,18 @@ class ClaudeCodeAdapter(BaseAdapter):
             "claude",
             "--print",
             "--dangerously-skip-permissions",
-            "--prompt",
             full_prompt,
         ]
 
         logger.info("claude-code: running in %s (run=%s)", workspace, payload.run_id)
 
         try:
-            proc = await self.run_subprocess(cmd, workspace)
+            proc = await self.run_subprocess(
+                cmd,
+                workspace,
+                logger=logger,
+                label=f"claude-code: run={payload.run_id}",
+            )
 
             stdout_text = proc.stdout.decode("utf-8", errors="replace")
             stderr_text = proc.stderr.decode("utf-8", errors="replace")

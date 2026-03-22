@@ -107,6 +107,10 @@ class Session:
 
         console.print()
         console.print(
+            "[bold dark_orange3]Context Agent[/bold dark_orange3] "
+            "[dim]requires a human decision before the coder agent can execute.[/dim]"
+        )
+        console.print(
             "[bold yellow]High-risk task requires human approval before execution.[/bold yellow]"
         )
         response = console.input("Approve this run? [y/N]: ").strip().lower()
@@ -126,7 +130,11 @@ class Session:
         reason: str | None = None,
     ) -> dict | None:
         """Resolve a pending human approval."""
-        print_step("approve", f"{'Approving' if approved else 'Rejecting'} run {run_id[:8]}...")
+        print_step(
+            "context-agent",
+            f"{'Approving' if approved else 'Rejecting'} run {run_id[:8]}...",
+            style="dark_orange3",
+        )
 
         try:
             response = httpx.post(
@@ -135,6 +143,7 @@ class Session:
                     "approved": approved,
                     "reviewer": reviewer,
                     "reason": reason,
+                    "workspace_path": self.project_dir,
                 },
                 timeout=360.0,
             )
@@ -174,7 +183,11 @@ class Session:
             if a.is_image
         ]
 
-        print_step("send", f"Sending to Context Agent ({self.assistant})...")
+        print_step(
+            "context-agent",
+            f"Reviewing prompt and preparing a task for the coder agent ({self.assistant})...",
+            style="dark_orange3",
+        )
 
         try:
             response = httpx.post(
@@ -183,6 +196,7 @@ class Session:
                     "prompt": full_prompt,
                     "repository": self.repository,
                     "assistant": self.assistant,
+                    "workspace_path": self.project_dir,
                     "images": images if images else None,
                 },
                 timeout=360.0,

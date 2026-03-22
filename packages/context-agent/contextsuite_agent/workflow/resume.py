@@ -46,6 +46,7 @@ def resolve_human_approval(
     approved: bool,
     reviewer: str,
     reason: str | None = None,
+    workspace_path: str | None = None,
 ) -> AgentState:
     """Resolve an escalated run with a human decision and continue if approved."""
     state = load_state_for_run(run_id)
@@ -75,6 +76,8 @@ def resolve_human_approval(
     )
 
     state["approval"] = decision
+    if workspace_path:
+        state["workspace_path"] = workspace_path
 
     if not approved:
         RunsRepo.update_run_status(run_id, "rejected")

@@ -70,23 +70,31 @@ The remaining operational risk is no longer the adapter code itself. The main fa
 
 - CLI-agent subprocess execution was moved to a Windows-safe worker-thread subprocess path
 - The Codex adapter now uses the current `codex exec` command shape
+- The Claude Code adapter now uses the current `claude --print ...` command shape without the removed `--prompt` flag
 - Packaged `context-agent` and `cli-agent` entrypoints now default to `reload = false`
+- The selected workspace path now propagates end to end, so demo runs execute inside `./demo` instead of silently defaulting to the repo root
+- Long-running assistant executions now emit heartbeat logs so synchronous A2A waits are visible instead of appearing frozen
+- A PowerShell launcher script now clears stale ports and opens clean demo terminals automatically
 
 ### Remaining caveat
 
 - If port `8001` is already occupied by an older CLI-agent process, `uv run cli-agent` can fail to bind and your requests will still hit the stale process
 - In that situation, the demo can still look broken even though the new code is correct
 - The selected coding assistant CLI must still be installed and callable from `PATH`
+- The Context Agent still waits synchronously for the CLI Agent during `message/send`, so the flow can pause on the dispatch step while the local coding assistant is working
 
 ### Practical impact
 
 - The guardrail story remains fully demoable because the violating prompt escalates before execution
 - The full approval-resume execution path works when the agent ports are clean and the assistant CLI is available
 - If an old process still owns `8001`, the default local demo commands can hit stale behavior and appear to ignore recent fixes
+- If a run appears to pause after dispatch, the new logs should now show either periodic adapter heartbeats or the next failure point instead of going silent
 
 ### Workaround
 
 - Kill any older CLI-agent listener before starting a new one, or run both agents on a clean alternate port
+- Prefer the launcher script for presentations:
+  - `powershell.exe -ExecutionPolicy Bypass -File .\scripts\start_demo_agents.ps1 -Assistant claude`
 - For alternate-port runs, set `CLI_AGENT_PORT` for both services before starting them
 - Verify the assistant CLI locally before presenting:
   - `codex --help`

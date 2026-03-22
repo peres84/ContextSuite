@@ -33,7 +33,12 @@ class CursorAdapter(BaseAdapter):
         logger.info("cursor: running in %s (run=%s)", workspace, payload.run_id)
 
         try:
-            proc = await self.run_subprocess(cmd, workspace)
+            proc = await self.run_subprocess(
+                cmd,
+                workspace,
+                logger=logger,
+                label=f"cursor: run={payload.run_id}",
+            )
 
             stdout_text = proc.stdout.decode("utf-8", errors="replace")
             stderr_text = proc.stderr.decode("utf-8", errors="replace")

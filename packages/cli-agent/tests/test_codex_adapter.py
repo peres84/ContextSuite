@@ -20,7 +20,7 @@ class DummyProcess:
 def test_codex_adapter_uses_exec_and_reads_last_message(monkeypatch, tmp_path):
     captured: dict[str, object] = {}
 
-    async def fake_run_subprocess(self, cmd, workspace):
+    async def fake_run_subprocess(self, cmd, workspace, **_kwargs):
         captured["cmd"] = cmd
         captured["cwd"] = workspace
         output_path = Path(cmd[cmd.index("--output-last-message") + 1])
@@ -50,7 +50,7 @@ def test_codex_adapter_uses_exec_and_reads_last_message(monkeypatch, tmp_path):
 
 
 def test_codex_adapter_surfaces_stderr_on_failure(monkeypatch, tmp_path):
-    async def fake_run_subprocess(self, _cmd, _workspace):
+    async def fake_run_subprocess(self, _cmd, _workspace, **_kwargs):
         return DummyProcess(returncode=2, stderr=b"error: execution failed")
 
     monkeypatch.setattr(CodexAdapter, "run_subprocess", fake_run_subprocess)

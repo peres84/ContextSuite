@@ -8,6 +8,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 console = Console()
+CONTEXT_AGENT_STYLE = "dark_orange3"
+CODER_AGENT_STYLE = "bright_blue"
+
+
+def _print_agent_label(name: str, subtitle: str, *, style: str):
+    console.print()
+    console.print(f"[bold {style}]{name}[/bold {style}] [dim]{subtitle}[/dim]")
 
 
 def print_banner():
@@ -74,8 +81,75 @@ def _render_saved_memory(saved_memory: dict):
     console.print(
         Panel(
             "\n".join(lines),
-            title=saved_memory.get("title", "Saved Memory"),
-            border_style="magenta",
+            title=f"Context Agent Memory - {saved_memory.get('title', 'Saved Memory')}",
+            border_style=CONTEXT_AGENT_STYLE,
+            padding=(1, 2),
+        )
+    )
+
+
+def _render_agent_interaction(result: dict):
+    assistant = result.get("assistant") or "coder"
+    risk = result.get("risk", {})
+    approval = result.get("approval", {})
+    execution = result.get("execution") or {}
+    task_id = (result.get("task_id") or "")[:8]
+    task_label = task_id or "pending-id"
+
+    risk_level = risk.get("level", "unknown")
+    risk_color = {"low": "green", "medium": "yellow", "high": "red"}.get(risk_level, "white")
+
+    lines = [
+        "[bold dark_orange3]Context Agent[/bold dark_orange3] -> [bold]User[/bold]: "
+        f"reviewed the prompt and classified it as [{risk_color}]{risk_level}[/{risk_color}]."
+    ]
+
+    approval_status = approval.get("status", "rejected")
+    reviewer = approval.get("reviewer") or "policy"
+    if approval_status == "approved":
+        lines.append(
+            "[bold dark_orange3]Context Agent[/bold dark_orange3] -> [bold]User[/bold]: "
+            f"approved the run ({reviewer})."
+        )
+        lines.append(
+            "[bold dark_orange3]Context Agent[/bold dark_orange3] -> "
+            f"[bold bright_blue]Coder Agent ({assistant})[/bold bright_blue]: "
+            f"dispatched task {task_label} for execution."
+        )
+    elif approval_status == "escalated":
+        lines.append(
+            "[bold dark_orange3]Context Agent[/bold dark_orange3] -> [bold]User[/bold]: "
+            "requested human approval before dispatch."
+        )
+        if execution:
+            lines.append(
+                "[bold dark_orange3]Context Agent[/bold dark_orange3] -> "
+                f"[bold bright_blue]Coder Agent ({assistant})[/bold bright_blue]: "
+                f"dispatched task {task_label} after approval."
+            )
+    else:
+        lines.append(
+            "[bold dark_orange3]Context Agent[/bold dark_orange3] -> [bold]User[/bold]: "
+            f"rejected the run ({approval.get('reason', 'policy blocked')})."
+        )
+
+    if execution:
+        state = execution.get("state", "unknown")
+        state_color = "green" if state == "completed" else "red"
+        lines.append(
+            f"[bold bright_blue]Coder Agent ({assistant})[/bold bright_blue] -> "
+            "[bold dark_orange3]Context Agent[/bold dark_orange3]: "
+            f"returned [{state_color}]{state}[/{state_color}] to the workflow."
+        )
+        if execution.get("summary"):
+            lines.append(f"[dim]{execution['summary']}[/dim]")
+
+    console.print()
+    console.print(
+        Panel(
+            "\n".join(lines),
+            title="Agent Interaction",
+            border_style="yellow",
             padding=(1, 2),
         )
     )
@@ -84,6 +158,13 @@ def _render_saved_memory(saved_memory: dict):
 def print_result(result: dict):
     """Print the full workflow result."""
     console.print()
+    assistant = result.get("assistant") or "coder"
+
+    _print_agent_label(
+        "Context Agent",
+        "retrieval, risk review, approval, and packaging",
+        style=CONTEXT_AGENT_STYLE,
+    )
 
     risk = result.get("risk", {})
     risk_level = risk.get("level", "unknown")
@@ -108,10 +189,24 @@ def print_result(result: dict):
     plan = result.get("plan")
     if plan:
         console.print()
-        console.print(Panel(Markdown(plan), title="Plan", border_style="cyan", padding=(1, 2)))
+        console.print(
+            Panel(
+                Markdown(plan),
+                title="Context Agent Plan",
+                border_style=CONTEXT_AGENT_STYLE,
+                padding=(1, 2),
+            )
+        )
+
+    _render_agent_interaction(result)
 
     execution = result.get("execution")
     if execution:
+        _print_agent_label(
+            f"Coder Agent ({assistant})",
+            "execution result from the local coding assistant",
+            style=CODER_AGENT_STYLE,
+        )
         console.print()
         state = execution.get("state", "unknown")
         state_color = "green" if state == "completed" else "red"
@@ -122,8 +217,8 @@ def print_result(result: dict):
             Panel(
                 f"[{state_color}]{state}[/{state_color}]{dur_str}\n\n"
                 f"{execution.get('summary', '')}",
-                title="Execution",
-                border_style=state_color,
+                title=f"Coder Agent Execution ({assistant})",
+                border_style=CODER_AGENT_STYLE if state == "completed" else state_color,
                 padding=(1, 2),
             )
         )
@@ -131,7 +226,14 @@ def print_result(result: dict):
         output = execution.get("output")
         if output and output.strip():
             console.print()
-            console.print(Panel(output[:3000], title="Output", border_style="dim", padding=(0, 1)))
+            console.print(
+                Panel(
+                    output[:3000],
+                    title=f"Coder Agent Output ({assistant})",
+                    border_style=CODER_AGENT_STYLE,
+                    padding=(0, 1),
+                )
+            )
 
     _render_saved_memory(result.get("saved_memory"))
 
@@ -155,7 +257,14 @@ def print_context_summary(summary: str, max_lines: int = 15):
         truncated = "\n".join(lines[:max_lines]) + f"\n... ({len(lines) - max_lines} more)"
     else:
         truncated = summary
-    console.print(Panel(truncated, title="Retrieved Context", border_style="dim", padding=(0, 1)))
+    console.print(
+        Panel(
+            truncated,
+            title="Context Agent Context",
+            border_style=CONTEXT_AGENT_STYLE,
+            padding=(0, 1),
+        )
+    )
 
 
 def print_attachments(attachments: list):

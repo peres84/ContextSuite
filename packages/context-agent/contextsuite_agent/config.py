@@ -10,6 +10,7 @@ class AgentSettings(BaseSettings):
     context_agent_host: str = "0.0.0.0"
     context_agent_port: int = 8000
     context_agent_reload: bool = False
+    context_agent_log_level: str = "INFO"
 
     # Supabase
     supabase_url: str = ""

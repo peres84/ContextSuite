@@ -34,6 +34,7 @@ When you ask ContextSuite to change the main styling from green to red, the Cont
 - [INC-2026-0001-red-theme-regression.md](/d:/Proyectos/hackathons/2026/heilbronn-hackathon/demo/docs/incidents/INC-2026-0001-red-theme-regression.md)
 - [theme-system.md](/d:/Proyectos/hackathons/2026/heilbronn-hackathon/demo/docs/notes/theme-system.md)
 - [ingest_brand_demo.py](/d:/Proyectos/hackathons/2026/heilbronn-hackathon/scripts/ingest_brand_demo.py)
+- [start_demo_agents.ps1](/d:/Proyectos/hackathons/2026/heilbronn-hackathon/scripts/start_demo_agents.ps1)
 
 ## Prerequisites
 
@@ -51,6 +52,38 @@ uv sync --all-packages
 uv run pytest packages/context-agent/tests/test_workflow.py -q
 uv run python scripts/test_all.py
 ```
+
+## One-Click Launcher
+
+If you want the fastest clean startup, use the launcher script from the repo root.
+
+What it does:
+
+- stops stale `context-agent` and `cli-agent` processes
+- frees the common demo ports
+- opens a fresh CLI Agent terminal
+- opens a fresh Context Agent terminal
+- opens a third terminal that runs `contextsuite init` for `./demo`
+
+Claude:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\start_demo_agents.ps1 -Assistant claude
+```
+
+Codex:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\start_demo_agents.ps1 -Assistant codex
+```
+
+With the demo site too:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\start_demo_agents.ps1 -Assistant claude -OpenDemoSite
+```
+
+After the terminals open, you only need to run the `contextsuite chat` command in the `ContextSuite Demo Prompt` terminal.
 
 ## Fastest Demo Path
 
