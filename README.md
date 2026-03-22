@@ -50,7 +50,7 @@ Instead of sending prompts directly to a coding assistant, the user sends them t
 
 - Low-risk tasks are auto-approved.
 - Medium-risk tasks are also auto-approved in MVP mode.
-- High-risk tasks are rejected and not dispatched.
+- High-risk tasks pause for human approval before dispatch.
 - File references are wired end to end.
 - Image attachment syntax exists in the CLI, but the current workflow is still text-first. Treat image support as experimental.
 
@@ -179,6 +179,7 @@ Prove a simple end-to-end flow:
 
 ## Documentation
 
+- [Docs index](docs/README.md)
 - [User guideline](docs/user-guideline.md)
 - [Pipeline guide](docs/pipeline.md)
 - [Workflow guide](docs/workflow.md)

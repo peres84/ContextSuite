@@ -22,9 +22,11 @@ class AgentState(TypedDict, total=False):
 
     # Workflow outputs
     context_summary: str | None
+    context_sources: list[dict] | None
     plan: str | None
     risk: RiskAssessment | None
     approval: ApprovalDecision | None
+    saved_memory: dict | None
 
     # Dispatch
     task_id: str | None

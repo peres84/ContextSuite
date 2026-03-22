@@ -120,7 +120,7 @@ curl -X POST http://127.0.0.1:8000/tasks/send \
 
 Expected: `approval.approved: true`, `status` reaches `completed` when the CLI Agent is running, and `task_id` is set.
 
-### Send a high-risk prompt (should be rejected)
+### Send a high-risk prompt (should require human approval)
 
 ```bash
 curl -X POST http://127.0.0.1:8000/tasks/send \
@@ -132,7 +132,23 @@ curl -X POST http://127.0.0.1:8000/tasks/send \
   }'
 ```
 
-Expected: `approval.approved: false`, `risk.level: "high"`, `status: "skipped_not_approved"`, `task_id: null`.
+Expected: `approval.approved: false`, `approval.status: "escalated"`, `risk.level: "high"`, `status: "pending_human_approval"`, `task_id: null`.
+
+### Approve the escalated run
+
+Use the `run_id` returned by the previous request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tasks/<run-id>/approval \
+  -H "Content-Type: application/json" \
+  -d '{
+    "approved": true,
+    "reviewer": "human-cli",
+    "reason": "Reviewed by operator"
+  }'
+```
+
+Expected: the run continues to dispatch, `status` reaches `completed` when the CLI Agent is running, and `saved_memory.saved` is `true` when issue-related context was involved.
 
 ### Send a policy-violating prompt (should be blocked)
 
@@ -211,6 +227,11 @@ SELECT decision, risk, reason, reviewer FROM approvals WHERE run_id = '<run-id>'
 
 -- Context snapshot for a run
 SELECT summary, sources FROM context_snapshots WHERE run_id = '<run-id>';
+
+-- Durable issue memory saved for a run
+SELECT title, source_type, metadata FROM documents
+WHERE source_type = 'issue_memory'
+  AND metadata->>'run_id' = '<run-id>';
 
 -- Ingested documents
 SELECT source_type, title, chunk_index, vector_id FROM documents ORDER BY created_at DESC;

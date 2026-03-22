@@ -1,9 +1,10 @@
-"""Interactive session manager — handles the chat loop and API calls."""
+"""Interactive session manager - handles the chat loop and API calls."""
 
 from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 import httpx
@@ -44,7 +45,6 @@ class Session:
         self.last_result: dict | None = None
         self.pending_images: list[Attachment] = []
 
-        # Load project config if exists
         config_path = Path(self.project_dir) / CONFIG_FILE
         if config_path.exists():
             with open(config_path) as f:
@@ -62,16 +62,14 @@ class Session:
         if cmd in ("/quit", "/exit", "/q"):
             return False
 
-        elif cmd == "/help":
+        if cmd == "/help":
             print_help()
-
         elif cmd == "/assistant":
             if arg in ("codex", "claude", "cursor"):
                 self.assistant = arg
                 print_step("config", f"Switched to [bold]{arg}[/bold]")
             else:
                 print_warning("Usage: /assistant codex|claude|cursor")
-
         elif cmd == "/image":
             if not arg:
                 print_warning("Usage: /image path/to/image.png")
@@ -84,13 +82,11 @@ class Session:
                     print_warning(f"{arg} is not an image file")
                 else:
                     print_error(f"File not found: {arg}")
-
         elif cmd == "/context":
             if self.last_context:
                 console.print(self.last_context)
             else:
                 print_warning("No context retrieved yet")
-
         elif cmd == "/status":
             console.print(f"  Project:   {self.project_dir}")
             console.print(f"  Repository: {self.repository or '(not set)'}")
@@ -98,18 +94,69 @@ class Session:
             console.print(f"  Agent URL:  {self.agent_url}")
             if self.pending_images:
                 console.print(f"  Images:     {len(self.pending_images)} pending")
-
         else:
             print_warning(f"Unknown command: {cmd}. Type /help for available commands.")
 
         return True
 
+    def _request_human_approval(self, result: dict) -> bool | None:
+        if result.get("status") != "pending_human_approval":
+            return None
+        if not sys.stdin.isatty():
+            return None
+
+        console.print()
+        console.print(
+            "[bold yellow]High-risk task requires human approval before execution.[/bold yellow]"
+        )
+        response = console.input("Approve this run? [y/N]: ").strip().lower()
+        if response in {"y", "yes"}:
+            return True
+        if response in {"n", "no", ""}:
+            return False
+        print_warning("Approval response not recognized; leaving the run pending.")
+        return None
+
+    def resolve_approval(
+        self,
+        *,
+        run_id: str,
+        approved: bool,
+        reviewer: str = "human-cli",
+        reason: str | None = None,
+    ) -> dict | None:
+        """Resolve a pending human approval."""
+        print_step("approve", f"{'Approving' if approved else 'Rejecting'} run {run_id[:8]}...")
+
+        try:
+            response = httpx.post(
+                f"{self.agent_url}/tasks/{run_id}/approval",
+                json={
+                    "approved": approved,
+                    "reviewer": reviewer,
+                    "reason": reason,
+                },
+                timeout=360.0,
+            )
+            response.raise_for_status()
+            result = response.json()
+            self.last_result = result
+            self.last_context = result.get("context_summary")
+            return result
+        except httpx.HTTPStatusError as e:
+            print_error(f"Approval resolution failed: {e.response.status_code}")
+            try:
+                console.print(f"  [dim]{e.response.json()}[/dim]")
+            except Exception:
+                pass
+            return None
+        except Exception as e:
+            print_error(f"Approval resolution failed: {e}")
+            return None
+
     def send_prompt(self, raw_input: str) -> dict | None:
         """Parse input, build request, and send to the Context Agent."""
-        # Parse @file and #image references
         prompt, attachments = parse_references(raw_input, self.project_dir)
-
-        # Add any pending images from /image command
         attachments.extend(self.pending_images)
         self.pending_images = []
 
@@ -117,14 +164,10 @@ class Session:
             print_warning("Empty prompt. Type your prompt or /help for commands.")
             return None
 
-        # Show attachments
         if attachments:
             print_attachments(attachments)
 
-        # Build full prompt with file contents
         full_prompt = format_prompt_with_attachments(prompt, attachments)
-
-        # Build image data for the request
         images = [
             {"name": a.name, "data": a.content, "mime_type": a.mime_type}
             for a in attachments
@@ -150,7 +193,15 @@ class Session:
             self.last_result = result
             self.last_context = result.get("context_summary")
 
-            return result
+            human_decision = self._request_human_approval(result)
+            if human_decision is None:
+                return result
+
+            follow_up = self.resolve_approval(
+                run_id=result["run_id"],
+                approved=human_decision,
+            )
+            return follow_up or result
 
         except httpx.ConnectError:
             print_error(
@@ -158,7 +209,6 @@ class Session:
                 "  Start it with: uv run context-agent"
             )
             return None
-
         except httpx.HTTPStatusError as e:
             print_error(f"Context Agent error: {e.response.status_code}")
             try:
@@ -167,7 +217,6 @@ class Session:
             except Exception:
                 pass
             return None
-
         except Exception as e:
             print_error(f"Request failed: {e}")
             return None

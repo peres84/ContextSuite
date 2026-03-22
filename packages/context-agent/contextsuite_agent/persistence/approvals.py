@@ -30,5 +30,13 @@ class ApprovalsRepo:
 
     @staticmethod
     def get_approval_for_run(run_id: str) -> dict | None:
-        result = get_supabase().table("approvals").select("*").eq("run_id", run_id).execute()
+        result = (
+            get_supabase()
+            .table("approvals")
+            .select("*")
+            .eq("run_id", run_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
         return result.data[0] if result.data else None

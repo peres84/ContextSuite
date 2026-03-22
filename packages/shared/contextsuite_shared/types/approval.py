@@ -3,13 +3,19 @@
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class RiskLevel(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+
+
+class ApprovalStatus(StrEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    ESCALATED = "escalated"
 
 
 class RiskSignal(BaseModel):
@@ -31,6 +37,10 @@ class ApprovalDecision(BaseModel):
     """Represents an approval or rejection decision."""
 
     approved: bool
+    status: ApprovalStatus | None = Field(
+        default=None,
+        description="Approval status: approved, rejected, or escalated for human review",
+    )
     risk: RiskAssessment = Field(default_factory=RiskAssessment)
     reason: str | None = Field(default=None, description="Why the task was approved or blocked")
     reviewer: str = Field(default="auto", description="Who approved: 'auto' or a user ID")
@@ -38,3 +48,9 @@ class ApprovalDecision(BaseModel):
         default_factory=list, description="List of violated policy rules"
     )
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @model_validator(mode="after")
+    def ensure_status(self) -> "ApprovalDecision":
+        if self.status is None:
+            self.status = ApprovalStatus.APPROVED if self.approved else ApprovalStatus.REJECTED
+        return self

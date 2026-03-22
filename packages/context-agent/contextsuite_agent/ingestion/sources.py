@@ -16,6 +16,7 @@ class SourceType(StrEnum):
     DOC = "doc"
     CODE_SUMMARY = "code_summary"
     ISSUE = "issue"
+    ISSUE_MEMORY = "issue_memory"
 
 
 class DocumentSource(BaseModel):

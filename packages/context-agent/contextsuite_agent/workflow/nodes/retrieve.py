@@ -27,7 +27,12 @@ def retrieve(state: AgentState) -> AgentState:
 
     # Save context snapshot
     sources = [
-        {"source": r.source, "score": r.score, "metadata": r.metadata}
+        {
+            "source": r.source,
+            "score": r.score,
+            "metadata": r.metadata,
+            "content": r.content,
+        }
         for r in results
     ]
     RunsRepo.save_context_snapshot(run_id=run_id, summary=summary, sources=sources)
@@ -35,4 +40,4 @@ def retrieve(state: AgentState) -> AgentState:
     # Move run to 'planning'
     RunsRepo.update_run_status(run_id, "planning")
 
-    return {**state, "context_summary": summary}
+    return {**state, "context_summary": summary, "context_sources": sources}

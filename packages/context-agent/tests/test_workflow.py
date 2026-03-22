@@ -1,6 +1,11 @@
 """Tests for workflow nodes that don't require external services."""
 
+from contextsuite_agent.workflow.nodes.approve import approve
 from contextsuite_agent.workflow.nodes.classify import classify
+from contextsuite_agent.workflow.nodes.memory import (
+    extract_memory_references,
+    should_persist_issue_memory,
+)
 from contextsuite_agent.workflow.state import AgentState
 
 
@@ -45,7 +50,6 @@ class TestClassify:
             plan="Steps: 1. Modify the authentication module to handle edge case",
         )
         result = classify(state)
-        # "auth" in plan triggers medium risk
         assert result["risk"].level in ("medium", "high")
 
     def test_payment_is_high_risk(self):
@@ -58,3 +62,79 @@ class TestClassify:
         result = classify(state)
         assert result["risk"].level == "high"
         assert len(result["risk"].signals) >= 3
+
+
+class TestApprove:
+    def test_high_risk_escalates_for_human_review(self, monkeypatch):
+        monkeypatch.setattr(
+            "contextsuite_agent.workflow.nodes.approve.RunsRepo.update_run_status",
+            lambda *args, **kwargs: {},
+        )
+        created = {}
+
+        def fake_create_approval(**kwargs):
+            created.update(kwargs)
+            return kwargs
+
+        monkeypatch.setattr(
+            "contextsuite_agent.workflow.nodes.approve.ApprovalsRepo.create_approval",
+            fake_create_approval,
+        )
+
+        state = AgentState(
+            prompt="delete payment data in production",
+            run_id="test-run",
+            trace_id="test-trace",
+            risk=classify(
+                AgentState(
+                    prompt="delete payment data in production",
+                    run_id="test-run",
+                    trace_id="test-trace",
+                )
+            )["risk"],
+        )
+
+        result = approve(state)
+        assert result["approval"].status == "escalated"
+        assert not result["approval"].approved
+        assert created["decision"] == "escalated"
+
+
+class TestMemoryExtraction:
+    def test_extracts_issue_and_constraint_refs(self):
+        issues, constraints = extract_memory_references([
+            {
+                "source": "vector",
+                "content": "Past incident INC-2024-0142 caused duplicate charges.",
+                "metadata": {
+                    "type": "incident",
+                    "title": "INC-2024-0142 duplicate charges",
+                    "file": "incidents/INC-2024-0142.md",
+                },
+            },
+            {
+                "source": "graph",
+                "content": "Constraint: webhook timeout",
+                "metadata": {
+                    "constraint_id": "ADR-012",
+                    "source": "adr/ADR-012.md",
+                },
+            },
+        ])
+
+        assert issues[0]["id"] == "INC-2024-0142"
+        assert constraints[0]["id"] == "ADR-012"
+
+    def test_persists_only_when_issue_related(self):
+        assert not should_persist_issue_memory(
+            issue_refs=[],
+            constraint_refs=[],
+            outcome_state="completed",
+            policy_violations=[],
+        )
+        assert should_persist_issue_memory(
+            issue_refs=[{"id": "INC-2024-0142"}],
+            constraint_refs=[],
+            outcome_state="completed",
+            policy_violations=[],
+        )

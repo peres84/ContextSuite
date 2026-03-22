@@ -2,6 +2,7 @@
 
 from contextsuite_shared.types.approval import (
     ApprovalDecision,
+    ApprovalStatus,
     RiskAssessment,
     RiskLevel,
     RiskSignal,
@@ -11,6 +12,7 @@ from contextsuite_shared.types.run import RunMeta
 
 __all__ = [
     "ApprovalDecision",
+    "ApprovalStatus",
     "PromptInput",
     "RiskAssessment",
     "RiskLevel",

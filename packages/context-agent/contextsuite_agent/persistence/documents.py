@@ -9,6 +9,37 @@ class DocumentsRepo:
     """CRUD operations for the documents table (ingestion tracking)."""
 
     @staticmethod
+    def create_document(
+        *,
+        repository_id: str | None,
+        source_type: str,
+        content: str,
+        source_path: str | None = None,
+        title: str | None = None,
+        chunk_index: int = 0,
+        chunk_total: int = 1,
+        vector_id: str | None = None,
+        metadata: dict | None = None,
+    ) -> dict:
+        sb = get_supabase()
+        result = (
+            sb.table("documents")
+            .insert({
+                "repository_id": repository_id,
+                "source_type": source_type,
+                "source_path": source_path,
+                "title": title,
+                "content": content,
+                "chunk_index": chunk_index,
+                "chunk_total": chunk_total,
+                "vector_id": vector_id,
+                "metadata": metadata or {},
+            })
+            .execute()
+        )
+        return result.data[0]
+
+    @staticmethod
     def list_for_repository(repository_id: str, limit: int = 100) -> list[dict]:
         sb = get_supabase()
         return (

@@ -8,6 +8,7 @@ from contextsuite_agent.workflow.nodes.approve import approve
 from contextsuite_agent.workflow.nodes.classify import classify
 from contextsuite_agent.workflow.nodes.dispatch import dispatch
 from contextsuite_agent.workflow.nodes.intake import intake
+from contextsuite_agent.workflow.nodes.memory import save_memory
 from contextsuite_agent.workflow.nodes.package import package
 from contextsuite_agent.workflow.nodes.plan import plan
 from contextsuite_agent.workflow.nodes.retrieve import retrieve
@@ -37,6 +38,7 @@ def build_graph() -> StateGraph:
     graph.add_node("approve", approve)
     graph.add_node("package", package)
     graph.add_node("dispatch", dispatch)
+    graph.add_node("save_memory", save_memory)
 
     # Linear flow through the pipeline
     graph.set_entry_point("intake")
@@ -51,7 +53,8 @@ def build_graph() -> StateGraph:
         "end": END,
     })
     graph.add_edge("package", "dispatch")
-    graph.add_edge("dispatch", END)
+    graph.add_edge("dispatch", "save_memory")
+    graph.add_edge("save_memory", END)
 
     return graph.compile()
 

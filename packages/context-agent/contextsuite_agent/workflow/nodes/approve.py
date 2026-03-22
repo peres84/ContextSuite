@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-from contextsuite_shared.types import ApprovalDecision, RiskAssessment
+from contextsuite_shared.types import ApprovalDecision, ApprovalStatus, RiskAssessment
 
 from contextsuite_agent.persistence import ApprovalsRepo, RunsRepo
 from contextsuite_agent.workflow.state import AgentState
@@ -40,6 +40,7 @@ def approve(state: AgentState) -> AgentState:
     if violations:
         decision = ApprovalDecision(
             approved=False,
+            status=ApprovalStatus.REJECTED,
             risk=risk_assessment,
             reason=f"Policy violation: {'; '.join(violations)}",
             reviewer="auto-policy",
@@ -51,6 +52,7 @@ def approve(state: AgentState) -> AgentState:
     elif risk_level == "low":
         decision = ApprovalDecision(
             approved=True,
+            status=ApprovalStatus.APPROVED,
             risk=risk_assessment,
             reason="Auto-approved: low risk task",
             reviewer="auto",
@@ -62,6 +64,7 @@ def approve(state: AgentState) -> AgentState:
     elif risk_level == "medium":
         decision = ApprovalDecision(
             approved=True,
+            status=ApprovalStatus.APPROVED,
             risk=risk_assessment,
             reason="Auto-approved: medium risk (MVP mode)",
             reviewer="auto-mvp",
@@ -73,19 +76,20 @@ def approve(state: AgentState) -> AgentState:
     else:
         decision = ApprovalDecision(
             approved=False,
+            status=ApprovalStatus.ESCALATED,
             risk=risk_assessment,
             reason="Requires human approval: high risk task",
             reviewer="auto",
             policy_violations=[],
             timestamp=datetime.now(UTC),
         )
-        RunsRepo.update_run_status(run_id, "rejected")
-        logger.warning("approve: run=%s REJECTED (high risk, needs human approval)", run_id)
+        RunsRepo.update_run_status(run_id, "reviewing")
+        logger.warning("approve: run=%s ESCALATED (high risk, needs human approval)", run_id)
 
     # Persist approval
     ApprovalsRepo.create_approval(
         run_id=run_id,
-        decision="approved" if decision.approved else "rejected",
+        decision=str(decision.status),
         risk=str(risk_level),
         reason=decision.reason,
         reviewer=decision.reviewer,

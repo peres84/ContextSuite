@@ -41,33 +41,75 @@ def print_warning(message: str):
     console.print(f"  [yellow][warn][/yellow] {message}")
 
 
+def _render_saved_memory(saved_memory: dict):
+    if not saved_memory:
+        return
+
+    if not saved_memory.get("saved"):
+        print_step("memory", f"Skipped - {saved_memory.get('reason', '')}", style="dim")
+        return
+
+    issue_refs = saved_memory.get("issue_refs", [])
+    constraint_refs = saved_memory.get("constraint_refs", [])
+    lines = [saved_memory.get("reason", "Saved issue-related memory")]
+
+    if issue_refs:
+        lines.append("")
+        lines.append("Issues:")
+        lines.extend(f"- {ref.get('id', '')}: {ref.get('title', '')}" for ref in issue_refs[:5])
+
+    if constraint_refs:
+        lines.append("")
+        lines.append("Constraints:")
+        lines.extend(
+            f"- {ref.get('id', '')}: {ref.get('title', '')}" for ref in constraint_refs[:5]
+        )
+
+    if saved_memory.get("document_ids"):
+        lines.append("")
+        lines.append(f"Stored records: {len(saved_memory['document_ids'])}")
+        lines.append(f"Vector stored: {'yes' if saved_memory.get('vector_stored') else 'no'}")
+
+    console.print()
+    console.print(
+        Panel(
+            "\n".join(lines),
+            title=saved_memory.get("title", "Saved Memory"),
+            border_style="magenta",
+            padding=(1, 2),
+        )
+    )
+
+
 def print_result(result: dict):
     """Print the full workflow result."""
     console.print()
 
-    # Risk
     risk = result.get("risk", {})
     risk_level = risk.get("level", "unknown")
     risk_color = {"low": "green", "medium": "yellow", "high": "red"}.get(risk_level, "white")
     print_step("risk", f"[{risk_color}]{risk_level}[/{risk_color}]")
     if risk.get("signals"):
-        for s in risk["signals"]:
-            console.print(f"           [dim]- {s}[/dim]")
+        for signal in risk["signals"]:
+            console.print(f"           [dim]- {signal}[/dim]")
 
-    # Approval
     approval = result.get("approval", {})
-    if approval.get("approved"):
+    approval_status = approval.get("status", "rejected")
+    if approval_status == "approved":
         print_step("approve", f"[green]Approved[/green] ({approval.get('reviewer', '')})")
+    elif approval_status == "escalated":
+        print_step(
+            "approve",
+            f"[yellow]Human approval required[/yellow] - {approval.get('reason', '')}",
+        )
     else:
-        print_step("approve", f"[red]Rejected[/red] — {approval.get('reason', '')}")
+        print_step("approve", f"[red]Rejected[/red] - {approval.get('reason', '')}")
 
-    # Plan
     plan = result.get("plan")
     if plan:
         console.print()
         console.print(Panel(Markdown(plan), title="Plan", border_style="cyan", padding=(1, 2)))
 
-    # Execution result
     execution = result.get("execution")
     if execution:
         console.print()
@@ -91,11 +133,14 @@ def print_result(result: dict):
             console.print()
             console.print(Panel(output[:3000], title="Output", border_style="dim", padding=(0, 1)))
 
-    # Status
+    _render_saved_memory(result.get("saved_memory"))
+
     status = result.get("status", "unknown")
     if status in ("completed", "ready"):
         print_success(f"Run {result.get('run_id', '')[:8]}... completed")
-    elif approval.get("approved") is False:
+    elif status == "pending_human_approval":
+        print_warning(f"Run {result.get('run_id', '')[:8]}... waiting for human approval")
+    elif approval_status == "rejected":
         print_warning(f"Run {result.get('run_id', '')[:8]}... rejected")
     else:
         print_error(f"Run {result.get('run_id', '')[:8]}... {status}")

@@ -99,14 +99,16 @@ All notable changes to ContextSuite are documented in this file.
 - All adapters return `TaskResult` (completed/failed) with normalized output
 - Missing CLI tools are reported as `TaskResult(state=failed)` with install instructions
 
-### Phase 9: Approval And Safety Layer (partial)
+### Phase 9: Approval And Safety Layer
 
-- Risk classification and approval routing were built in Phase 6
+- Risk classification and approval routing remain in the main workflow
 - Policy blocklist: `drop database`, `rm -rf /`, `delete all users`, `disable authentication`
-- Approval decisions persisted in Supabase with reviewer, risk, reason, and violations
-- Human approval checkpoint deferred for MVP (auto-approve medium, reject high)
+- High-risk tasks now escalate to human approval instead of being hard-rejected immediately
+- Added approval status contract with `approved`, `rejected`, and `escalated`
+- Added `POST /tasks/{run_id}/approval` to resolve human approvals and resume the persisted run
+- Approval history now records both escalation and final human decisions in Supabase
 
-### Phase 10: CLI Demo Surface
+### Phase 10: CLI Demo Surface And Saved Memory
 
 - Built `contextsuite` CLI app (`packages/cli-app`) with Click + Rich + prompt-toolkit
 - Interactive terminal chat with prompt history (`.contextsuite/history.txt`)
@@ -116,8 +118,20 @@ All notable changes to ContextSuite are documented in this file.
 - File references via `@file.py` tags — attaches file content to the prompt
 - Image attachments via `#image:path.png` or `/image path.png` commands
 - Assistant selection via `/assistant codex|claude|cursor` during session
-- Rich output: colored risk levels, approval status, plan panels, execution results
+- Rich output: colored risk levels, approval status, plan panels, execution results, and saved memory
 - Sends prompts to Context Agent `POST /tasks/send` with full attachment support
+- CLI now prompts the operator for approval when a run is escalated
+- Added post-dispatch `save_memory` workflow step
+- Issue-related outcomes now persist as durable `issue_memory` documents for future retrieval
+- Memory saving falls back to plain Supabase document storage if vector ingestion fails
+
+### Documentation Refresh
+
+- Updated root `README.md` to reflect the human approval flow
+- Rewrote `docs/workflow.md` for the current workflow, approval endpoint, and saved memory behavior
+- Updated `docs/pipeline.md` with escalated approval testing and issue-memory verification queries
+- Refreshed `docs/demo-script.md` so the live story matches the current approval pause behavior
+- Added `docs/README.md` as a docs index for operators and judges
 
 ### Full A2A E2E Verified
 

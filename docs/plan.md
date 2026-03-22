@@ -161,7 +161,7 @@ Exit criteria:
 
 - [x] Define low-risk tasks eligible for auto-approval
 - [x] Define medium-risk and high-risk triggers
-- [ ] Add a human approval checkpoint for risky actions (deferred — MVP uses auto-approval)
+- [x] Add a human approval checkpoint for risky actions
 - [x] Add policy rules for forbidden or sensitive actions
 - [x] Add audit logging for approval decisions
 - [x] Add reason codes for blocked tasks
@@ -179,7 +179,7 @@ Exit criteria:
 - [x] Show approval status
 - [x] Show which coding assistant was selected
 - [x] Show execution progress and final result
-- [ ] Show memory saved after completion (deferred — memory persistence not yet wired)
+- [x] Show memory saved after completion
 - [x] Interactive terminal chat with prompt history
 - [x] File references via `@file.py` tags
 - [x] Image attachments via `#image:path.png` or `/image path.png`

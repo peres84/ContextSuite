@@ -1,4 +1,4 @@
-"""Task packaging node — builds the A2A payload for dispatch to the CLI Agent."""
+"""Task packaging node - builds the A2A payload for dispatch to the CLI Agent."""
 
 from __future__ import annotations
 
@@ -13,14 +13,16 @@ from contextsuite_agent.workflow.state import AgentState
 logger = logging.getLogger(__name__)
 
 
-def package(state: AgentState) -> AgentState:
-    """Package the approved task into an A2A TaskPayload for dispatch."""
+def prepare_dispatch(state: AgentState) -> AgentState:
+    """Build the A2A payload for an approved task."""
     run_id = state["run_id"]
     trace_id = state["trace_id"]
     approval = state.get("approval")
 
     if not approval or not approval.approved:
-        logger.info("package: skipping — task not approved (run=%s)", run_id)
+        logger.info("package: skipping - task not approved (run=%s)", run_id)
+        if approval and getattr(approval, "status", None) == "escalated":
+            return {**state, "dispatch_status": "pending_human_approval"}
         RunsRepo.update_run_status(run_id, "rejected")
         return {**state, "dispatch_status": "skipped_not_approved"}
 
@@ -38,7 +40,6 @@ def package(state: AgentState) -> AgentState:
         repository=state.get("repository"),
     )
 
-    # Move run to dispatched
     RunsRepo.update_run_status(run_id, "dispatched")
 
     logger.info("package: ready to dispatch task=%s via A2A (run=%s)", task_id, run_id)
@@ -49,3 +50,8 @@ def package(state: AgentState) -> AgentState:
         "payload": payload,
         "dispatch_status": "ready",
     }
+
+
+def package(state: AgentState) -> AgentState:
+    """Package the approved task into an A2A TaskPayload for dispatch."""
+    return prepare_dispatch(state)

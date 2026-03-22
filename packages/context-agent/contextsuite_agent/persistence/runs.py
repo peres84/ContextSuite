@@ -36,6 +36,20 @@ class RunsRepo:
         return result.data[0]
 
     @staticmethod
+    def get_latest_plan(run_id: str) -> dict | None:
+        result = (
+            get_supabase()
+            .table("plans")
+            .select("*")
+            .eq("run_id", run_id)
+            .order("version", desc=True)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    @staticmethod
     def save_context_snapshot(*, run_id: str, summary: str, sources: list | None = None) -> dict:
         result = (
             get_supabase()
@@ -44,6 +58,19 @@ class RunsRepo:
             .execute()
         )
         return result.data[0]
+
+    @staticmethod
+    def get_latest_context_snapshot(run_id: str) -> dict | None:
+        result = (
+            get_supabase()
+            .table("context_snapshots")
+            .select("*")
+            .eq("run_id", run_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        return result.data[0] if result.data else None
 
     @staticmethod
     def save_outcome(
@@ -75,6 +102,19 @@ class RunsRepo:
             data["error_message"] = error_message
         result = get_supabase().table("outcomes").insert(data).execute()
         return result.data[0]
+
+    @staticmethod
+    def get_latest_outcome(run_id: str) -> dict | None:
+        result = (
+            get_supabase()
+            .table("outcomes")
+            .select("*")
+            .eq("run_id", run_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        return result.data[0] if result.data else None
 
     @staticmethod
     def list_runs(limit: int = 20) -> list[dict]:

@@ -7,6 +7,7 @@ import re
 
 from contextsuite_shared.types import RiskAssessment, RiskSignal
 
+from contextsuite_agent.persistence import RunsRepo
 from contextsuite_agent.workflow.state import AgentState
 
 logger = logging.getLogger(__name__)
@@ -66,5 +67,10 @@ def classify(state: AgentState) -> AgentState:
 
     risk = RiskAssessment(level=level, signals=signals, reason=reason)
     logger.info("classify: run=%s risk=%s (%d signals)", run_id, level, len(signals))
+
+    try:
+        RunsRepo.update_run_status(run_id, "reviewing", risk=level)
+    except Exception:
+        logger.debug("classify: could not persist risk for run=%s", run_id, exc_info=True)
 
     return {**state, "risk": risk}

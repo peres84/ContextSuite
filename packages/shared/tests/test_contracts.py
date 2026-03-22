@@ -25,6 +25,7 @@ from contextsuite_shared.agent_card import (
 )
 from contextsuite_shared.types import (
     ApprovalDecision,
+    ApprovalStatus,
     PromptInput,
     RiskAssessment,
     RiskLevel,
@@ -217,6 +218,12 @@ class TestApproval:
         a = ApprovalDecision(approved=True)
         assert a.reviewer == "auto"
         assert a.risk.level == RiskLevel.LOW
+        assert a.status == ApprovalStatus.APPROVED
+
+    def test_escalated_status(self):
+        a = ApprovalDecision(approved=False, status=ApprovalStatus.ESCALATED)
+        assert a.status == ApprovalStatus.ESCALATED
+        assert not a.approved
 
     def test_blocked_with_violations(self):
         a = ApprovalDecision(
@@ -233,6 +240,7 @@ class TestApproval:
         assert not a.approved
         assert len(a.policy_violations) == 1
         assert a.risk.signals[0].weight == 3.0
+        assert a.status == ApprovalStatus.REJECTED
 
 
 class TestRiskLevel:
