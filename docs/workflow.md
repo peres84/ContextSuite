@@ -11,6 +11,8 @@ intake → retrieve → plan → classify → approve →┬→ package → END
 
 If the task is approved, it flows to `package`. If rejected (high risk or policy violation), the graph ends immediately after `approve`.
 
+Implementation note: the current graph also runs a synchronous `dispatch` step after `package`, which sends the task to the CLI Agent and waits for the result before returning the final API response.
+
 ## State
 
 Defined in `workflow/state.py` as `AgentState(TypedDict)`:
@@ -29,7 +31,8 @@ Defined in `workflow/state.py` as `AgentState(TypedDict)`:
 | `approval` | approve | `ApprovalDecision` with approved/rejected, reviewer, reason |
 | `task_id` | package | UUID for the A2A task to dispatch |
 | `payload` | package | `TaskPayload` object ready for A2A delivery |
-| `dispatch_status` | package | `ready` or `skipped_not_approved` |
+| `dispatch_status` | package, dispatch | `ready`, `completed`, `failed`, `cli_agent_unreachable`, or `skipped_not_approved` |
+| `dispatch_result` | dispatch | Raw result returned by the CLI Agent |
 
 ## Nodes
 
@@ -89,6 +92,14 @@ All nodes are in `workflow/nodes/`. Each is a plain function `(AgentState) -> Ag
 - Updates run status to `dispatched`
 - Outputs: `task_id`, `payload`, `dispatch_status`
 
+### 7. dispatch (`nodes/dispatch.py`)
+
+- Sends the packaged task to the CLI Agent over HTTP
+- Waits for the CLI Agent result
+- Persists the outcome in Supabase
+- Updates the run status to `completed` or `failed`
+- Outputs: `dispatch_status`, `dispatch_result`
+
 ## HTTP API
 
 The workflow is exposed via `POST /tasks/send` on the Context Agent server (`server.py`).
@@ -109,7 +120,7 @@ The workflow is exposed via `POST /tasks/send` on the Context Agent server (`ser
 {
   "run_id": "47274bac-...",
   "trace_id": "90aea668-...",
-  "status": "ready",
+  "status": "completed",
   "plan": "This task involves modifying a webhook handler...",
   "context_summary": "1. [vector] Bug: Payment webhook handler crashes...",
   "risk": {
@@ -126,7 +137,7 @@ The workflow is exposed via `POST /tasks/send` on the Context Agent server (`ser
 }
 ```
 
-For rejected tasks, `status` is `"unknown"`, `task_id` is `null`, and `approval.approved` is `false`.
+For rejected tasks, `status` is `"skipped_not_approved"`, `task_id` is `null`, and `approval.approved` is `false`.
 
 ## Supabase tables touched
 
@@ -148,3 +159,4 @@ Each run creates or updates records in these tables (in order):
 | Qdrant Cloud | retrieve | Semantic similarity search |
 | Neo4j Aura | retrieve | Graph queries for related issues/constraints (optional, best-effort) |
 | Gemini 2.5 Flash | plan | Generate the task plan from prompt + context |
+| CLI Agent | dispatch | Execute the approved task with the selected assistant CLI |

@@ -97,6 +97,13 @@ heilbronn-hackathon/
 └── LICENSE
 ```
 
+Current notes:
+
+- `packages/cli-app` is the interactive terminal client exposed as `contextsuite`
+- `scripts/` contains service tests, demo ingestion, Neo4j setup, and scenario runners
+- `docs/user-guideline.md` is the practical end-to-end setup guide
+- `docs/plan/` contains planning assets and is committed in this repo
+
 ## Package Descriptions
 
 ### `packages/shared`
@@ -131,6 +138,16 @@ Key dependencies:
 - **FastAPI** for the local A2A listener
 - Subprocess management for coding assistant CLIs (Codex, Claude Code, Cursor)
 
+### `packages/cli-app`
+
+The terminal client used by a human tester or demo operator. It initializes a local project, sends prompts to the Context Agent, and renders plans, approvals, and execution results in the terminal.
+
+Key dependencies:
+
+- **Click** for commands
+- **Rich** for terminal rendering
+- **prompt-toolkit** for interactive chat and history
+
 ## Dependency Graph
 
 ```
@@ -139,6 +156,11 @@ shared ← cli-agent
 ```
 
 Both `context-agent` and `cli-agent` depend on `shared`. They do not depend on each other — they communicate exclusively over A2A at runtime.
+
+Dependency note:
+
+- `shared` is consumed by `context-agent`, `cli-agent`, and `cli-app`
+- `context-agent` and `cli-agent` communicate over A2A at runtime rather than direct imports
 
 ## Tooling
 

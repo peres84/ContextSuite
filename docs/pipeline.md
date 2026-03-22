@@ -12,15 +12,16 @@ This document explains how to run, test, and verify the ContextSuite pipeline.
 
 ```bash
 # Install all dependencies
-uv sync
+uv sync --all-packages
 
 # Run the full test suite (no cloud services needed)
 uv run pytest -v
 
 # Start the Context Agent server
 uv run context-agent
-# or directly:
-uv run uvicorn contextsuite_agent.server:app --host 127.0.0.1 --port 8000
+
+# Start the CLI Agent server in a second terminal
+uv run cli-agent
 ```
 
 ## Service Connectivity Tests
@@ -40,6 +41,11 @@ uv run python scripts/test_gemini.py
 # Test the Context Agent and CLI Agent HTTP servers (must be running)
 uv run python scripts/test_services.py
 ```
+
+Neo4j note:
+
+- Use `neo4j+s://`
+- Set `NEO4J_DATABASE` to the Aura database ID
 
 ## Seeding Demo Data
 
@@ -67,6 +73,17 @@ Test retrieval: 10 results
 Top result score: 0.81
 ```
 
+### Setting up Neo4j graph data
+
+After ingesting the demo documents, create the Neo4j schema and seed the graph:
+
+```bash
+uv run python scripts/setup_neo4j.py
+uv run python scripts/seed_neo4j.py
+```
+
+This creates the constraints, indexes, repository nodes, file graph, issues, and constraints used by graph retrieval.
+
 ### Using the legacy seed script
 
 ```bash
@@ -83,6 +100,12 @@ This is the older script from Phase 4. It seeds 5 documents directly into Qdrant
 uv run uvicorn contextsuite_agent.server:app --host 127.0.0.1 --port 8000 --reload
 ```
 
+In a second terminal, start the CLI Agent:
+
+```bash
+uv run cli-agent
+```
+
 ### Send a low-risk prompt (should be approved)
 
 ```bash
@@ -95,7 +118,7 @@ curl -X POST http://127.0.0.1:8000/tasks/send \
   }'
 ```
 
-Expected: `approval.approved: true`, `status: "ready"`, `task_id` is set.
+Expected: `approval.approved: true`, `status` reaches `completed` when the CLI Agent is running, and `task_id` is set.
 
 ### Send a high-risk prompt (should be rejected)
 
@@ -109,7 +132,7 @@ curl -X POST http://127.0.0.1:8000/tasks/send \
   }'
 ```
 
-Expected: `approval.approved: false`, `risk.level: "high"`, `task_id: null`.
+Expected: `approval.approved: false`, `risk.level: "high"`, `status: "skipped_not_approved"`, `task_id: null`.
 
 ### Send a policy-violating prompt (should be blocked)
 
@@ -228,3 +251,7 @@ POST /tasks/send
 | Empty retrieval results | Run `uv run python scripts/ingest_demo.py` to seed demo data. |
 | Supabase connection refused | Check `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env`. |
 | Qdrant timeout | Check `QDRANT_URL` and `QDRANT_API_KEY` in `.env`. Free tier may sleep after inactivity. |
+
+Neo4j status note:
+
+- Aura connectivity is now expected to work when `NEO4J_URI` uses `neo4j+s://` and `NEO4J_DATABASE` matches the Aura database ID.

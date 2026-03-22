@@ -37,6 +37,23 @@ Instead of sending prompts directly to a coding assistant, the user sends them t
   <img src="https://img.shields.io/badge/Coding_Agents-Codex%20%7C%20Claude%20Code%20%7C%20Cursor-4b5563?style=flat-square" alt="Supported coding agents" />
 </p>
 
+## What Works Today
+
+- Context Agent workflow: intake -> retrieve -> plan -> classify -> approve -> package -> dispatch
+- A2A handoff to a local CLI Agent over HTTP
+- Adapter support for `codex`, `claude`, and `cursor`
+- Context retrieval from Supabase, Qdrant Cloud, and Neo4j Aura
+- Interactive terminal app via `contextsuite`
+- Demo repository and scenarios for `acme/payments`
+
+## MVP Notes
+
+- Low-risk tasks are auto-approved.
+- Medium-risk tasks are also auto-approved in MVP mode.
+- High-risk tasks are rejected and not dispatched.
+- File references are wired end to end.
+- Image attachment syntax exists in the CLI, but the current workflow is still text-first. Treat image support as experimental.
+
 ## Workflow
 
 ![ContextSuite workflow](docs/workflow.png)
@@ -49,16 +66,6 @@ AI coding tools are fast, but they often lose important project context over tim
 
 Build a demo where a user sends a prompt to ContextSuite, ContextSuite reviews the task, then forwards an approved job over A2A to a Local Agent Client that runs Codex, Claude Code, or Cursor CLI and returns the result.
 
-## How The MVP Works
-
-1. User sends a prompt to the Context Agent.
-2. Context Agent retrieves relevant history, constraints, and prior issues.
-3. Context Agent prepares or reviews an implementation plan.
-4. Low-risk tasks are auto-approved; riskier ones can require human approval.
-5. The approved task is sent over A2A to the ContextSuite Local Agent Client.
-6. The Local Agent Client runs the selected coding assistant CLI.
-7. Results, approvals, and important issue-related outcomes are stored for future runs.
-
 ## Architecture Snapshot
 
 - Orchestration: LangGraph
@@ -70,12 +77,6 @@ Build a demo where a user sends a prompt to ContextSuite, ContextSuite reviews t
 - Vector retrieval: Qdrant Cloud
 - Relationship graph: Neo4j Aura
 
-## A2A And MCP
-
-ContextSuite is A2A-first.
-
-A2A is the protocol between the Context Agent and the Local Agent Client. MCP is optional and internal to the Context Agent when extra tools are needed. It is not the main transport for coding-agent execution.
-
 ## Project Structure
 
 ```
@@ -83,8 +84,13 @@ packages/
   shared/              Shared A2A contracts, agent cards, and types (Pydantic)
   context-agent/       Context Agent — LangGraph workflow, retrieval, persistence
   cli-agent/           CLI Agent — local client that runs coding assistant CLIs
+  cli-app/             Interactive terminal client (`contextsuite`)
+scripts/               Connectivity checks, seeding, and demo helpers
 docs/
-  architecture.md      Full folder layout and package descriptions
+  architecture.md      Monorepo layout and package roles
+  pipeline.md          Runtime and testing guide
+  workflow.md          Workflow and API behavior
+  user-guideline.md    End-to-end test instructions for humans
   plan.md              MVP execution checklist
 ```
 
@@ -94,8 +100,29 @@ See [`docs/architecture.md`](docs/architecture.md) for the complete folder tree.
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/) (package manager)
+- Access to Supabase, Qdrant Cloud, Neo4j Aura, and Google Gemini
+- At least one supported assistant CLI installed on `PATH`
+
+Assistant CLI examples:
+
+- Codex: `npm install -g @openai/codex`
+- Claude Code: `npm install -g @anthropic-ai/claude-code`
+- Cursor: make sure the `cursor` command is available on `PATH`
 
 ## Local Setup
+
+Copy `.env.example` to `.env` and fill in your values before starting.
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Important Neo4j note:
+
+- `NEO4J_URI` should use `neo4j+s://`
+- `NEO4J_DATABASE` must be the Aura database ID, not always `neo4j`
 
 ```bash
 # Clone and enter the repo
@@ -114,15 +141,31 @@ uv run context-agent
 uv run cli-agent
 ```
 
+Then seed the demo data and initialize a local demo workspace:
+
+```bash
+uv run pytest -q
+uv run python scripts/ingest_demo.py
+uv run python scripts/setup_neo4j.py
+uv run python scripts/seed_neo4j.py
+uv run python scripts/test_services.py
+uv run contextsuite -p ./demo-project init -r "acme/payments" -a codex
+uv run contextsuite -p ./demo-project chat
+```
+
 ## Available Commands
 
 | Command | Description |
 |---|---|
 | `uv run context-agent` | Start the Context Agent server |
 | `uv run cli-agent` | Start the CLI Agent server |
-| `uv run ruff check packages/` | Lint all packages |
-| `uv run ruff format packages/` | Format all packages |
-| `uv run pytest` | Run tests |
+| `uv run contextsuite -p ./demo-project chat` | Start the interactive CLI |
+| `uv run python scripts/test_all.py` | Check Supabase, Qdrant, Neo4j, and Gemini |
+| `uv run python scripts/test_services.py` | Check the local HTTP services |
+| `uv run python scripts/demo_scenarios.py` | Run canned approved and blocked demo flows |
+| `uv run ruff check .` | Lint the repo |
+| `uv run ruff format .` | Format the repo |
+| `uv run pytest -q` | Run tests |
 
 ## Near-Term Outcome
 
@@ -133,6 +176,22 @@ Prove a simple end-to-end flow:
 - one approved A2A task
 - one coding assistant execution
 - one stored memory trail
+
+## Documentation
+
+- [User guideline](docs/user-guideline.md)
+- [Pipeline guide](docs/pipeline.md)
+- [Workflow guide](docs/workflow.md)
+- [Architecture](docs/architecture.md)
+- [Live demo script](docs/demo-script.md)
+
+## Troubleshooting
+
+- `uv run pytest` works but cloud scripts fail: check `.env` and service credentials.
+- Neo4j connection fails: verify `neo4j+s://` and the exact `NEO4J_DATABASE` value from Aura.
+- Approved tasks fail after planning: the CLI Agent is probably not running on `127.0.0.1:8001`.
+- Adapter not found or CLI not found: install the selected assistant CLI and ensure it is on `PATH`.
+- Empty retrieval results: run `scripts/ingest_demo.py` again and confirm Qdrant is reachable.
 
 ## License
 

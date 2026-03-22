@@ -10,7 +10,7 @@ uv run python scripts/ingest_demo.py
 
 # 2. Start both agents in separate terminals
 uv run context-agent    # Terminal 1 — http://127.0.0.1:8000
-uv run cli-agent        # Terminal 2 — http://127.0.0.1:9000
+uv run cli-agent        # Terminal 2 — http://127.0.0.1:8001
 
 # 3. Init a demo project folder
 uv run contextsuite -p ./demo-project init -r "acme/payments" -a codex

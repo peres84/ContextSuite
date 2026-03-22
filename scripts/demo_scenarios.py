@@ -7,7 +7,7 @@ Usage:
 
 Requires:
   - Context Agent running at http://127.0.0.1:8000
-  - CLI Agent running at http://127.0.0.1:9000 (for execution)
+  - CLI Agent running at http://127.0.0.1:8001 (for execution)
   - Demo data ingested (run scripts/ingest_demo.py first)
 """
 
