@@ -1,8 +1,13 @@
 """Agent Card definitions."""
 
-from contextsuite_shared.agent_card.cli_agent import CLI_AGENT_CARD, build_cli_agent_card
+from contextsuite_shared.agent_card.cli_agent import (
+    CLI_AGENT_CARD,
+    CLI_AGENT_ID,
+    build_cli_agent_card,
+)
 from contextsuite_shared.agent_card.context_agent import (
     CONTEXT_AGENT_CARD,
+    CONTEXT_AGENT_ID,
     AgentCapabilities,
     AgentCard,
     AgentInterface,
@@ -18,7 +23,9 @@ __all__ = [
     "AgentProvider",
     "AgentSkill",
     "CLI_AGENT_CARD",
+    "CLI_AGENT_ID",
     "CONTEXT_AGENT_CARD",
+    "CONTEXT_AGENT_ID",
     "build_cli_agent_card",
     "build_context_agent_card",
 ]

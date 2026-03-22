@@ -2,30 +2,36 @@
 
 ## A2A Protocol Compatibility
 
-**Status:** Open  
+**Status:** Partially Resolved  
 **Date:** 2026-03-22
 
-### Issue
+### Current state
 
-The project currently uses A2A-shaped contracts, task models, and agent cards, but it does not implement the real A2A wire protocol.
+The project now exposes real A2A-compatible discovery and JSON-RPC endpoints on both servers.
 
-### Current behavior
+### Implemented
 
-- The Context Agent exposes custom endpoints such as `/tasks/send`
-- The CLI Agent exposes a custom endpoint at `/tasks/receive`
-- The handoff uses custom JSON over HTTP, not the standard A2A JSON-RPC methods
-- The project does not yet expose the standard A2A endpoint shape such as `/a2a/{assistant_id}`
-- The project does not yet implement standard A2A methods like `message/send`, `message/stream`, or `tasks/get`
+- Agent card discovery at `/.well-known/agent-card.json`
+- A2A assistant endpoints at `/a2a/{assistant_id}`
+- JSON-RPC `message/send` on the Context Agent and CLI Agent
+- JSON-RPC `tasks/get` on the Context Agent and CLI Agent
+- Context Agent -> CLI Agent dispatch now prefers the real A2A wire protocol
+- Legacy endpoints remain available for backward compatibility:
+  - Context Agent: `/tasks/send`, `/tasks/{run_id}/approval`
+  - CLI Agent: `/tasks/receive`
 
-### Impact
+### Remaining gaps
 
-- The system is not currently interoperable with real A2A-compatible agents or platforms out of the box
-- The current implementation should be described as A2A-inspired, not true A2A protocol compliance
+- `message/stream` is not implemented yet
+- Push notifications are not implemented
+- Non-blocking/background task execution is not implemented yet
+- `stateTransitionHistory` is not implemented
+- Context Agent `tasks/get` is backed by persisted run data, but CLI Agent `tasks/get` is process-local in-memory state only
 
-### Planned fix
+### Practical impact
 
-- Add real A2A-compatible endpoints and JSON-RPC request handling
-- Keep the existing workflow and adapters, but move the transport layer to actual A2A protocol semantics
+- The project is now interoperable with A2A clients for synchronous `message/send` flows and task polling
+- The implementation should be described as real A2A JSON-RPC support with partial protocol coverage, not full end-to-end A2A feature coverage
 
 ## Neo4j Aura - RESOLVED
 

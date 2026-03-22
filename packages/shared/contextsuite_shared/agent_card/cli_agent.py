@@ -1,4 +1,6 @@
-"""Agent Card for the CLI Agent (Local Client) — A2A spec compliant."""
+"""Agent Card for the CLI Agent aligned with the A2A spec."""
+
+from __future__ import annotations
 
 from contextsuite_shared.agent_card.context_agent import (
     AgentCapabilities,
@@ -8,36 +10,58 @@ from contextsuite_shared.agent_card.context_agent import (
     AgentSkill,
 )
 
+CLI_AGENT_ID = "contextsuite-cli-agent"
+
 
 def build_cli_agent_card(base_url: str = "http://localhost:8001") -> AgentCard:
     """Build the Agent Card for the CLI Agent."""
+    endpoint = f"{base_url}/a2a/{CLI_AGENT_ID}"
     return AgentCard(
-        id="contextsuite-cli-agent",
         name="ContextSuite CLI Agent",
         description=(
-            "Local agent client that receives A2A tasks and runs coding assistant CLIs "
-            "(Codex, Claude Code, Cursor)."
+            "Local agent client that receives approved ContextSuite tasks and runs "
+            "Codex, Claude Code, or Cursor through a real A2A JSON-RPC endpoint."
         ),
-        provider=AgentProvider(),
-        capabilities=AgentCapabilities(streaming=True, push_notifications=False, multi_turn=False),
+        url=endpoint,
+        preferredTransport="JSONRPC",
+        additionalInterfaces=[AgentInterface(url=endpoint, transport="JSONRPC")],
+        provider=AgentProvider(url=base_url),
+        documentationUrl=f"{base_url}/docs",
+        capabilities=AgentCapabilities(
+            streaming=False,
+            pushNotifications=False,
+            stateTransitionHistory=False,
+        ),
+        defaultInputModes=["application/json", "text/plain"],
+        defaultOutputModes=["application/json", "text/plain"],
         skills=[
             AgentSkill(
                 id="task-execution",
                 name="Task Execution",
-                description="Execute coding tasks using a selected CLI assistant",
-            ),
-            AgentSkill(
-                id="output-streaming",
-                name="Output Streaming",
-                description="Stream execution output back to the Context Agent",
+                description="Execute coding tasks using a selected CLI assistant.",
+                tags=["execution", "cli", "coding"],
+                inputModes=["application/json", "text/plain"],
+                outputModes=["application/json", "text/plain"],
             ),
             AgentSkill(
                 id="artifact-capture",
                 name="Artifact Capture",
-                description="Capture logs, patches, and summaries as artifacts",
+                description=(
+                    "Return execution summaries, logs, and artifacts from the selected assistant."
+                ),
+                tags=["artifacts", "logs", "results"],
+                inputModes=["application/json"],
+                outputModes=["application/json", "text/plain"],
+            ),
+            AgentSkill(
+                id="task-polling",
+                name="Task Polling",
+                description="Expose `tasks/get` for recently executed local tasks.",
+                tags=["tasks", "polling", "status"],
+                inputModes=["application/json"],
+                outputModes=["application/json"],
             ),
         ],
-        interfaces=[AgentInterface(url=f"{base_url}/.well-known/agent.json")],
     )
 
 

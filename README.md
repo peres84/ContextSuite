@@ -17,7 +17,9 @@
 
 ContextSuite is a context, governance, and memory layer for AI coding workflows.
 
-Instead of sending prompts directly to a coding assistant, the user sends them to a Context Agent first. The Context Agent gathers project memory, checks constraints and prior incidents, reviews the plan, and only then hands execution to a coding assistant through a simple A2A-based local bridge.
+Instead of sending prompts directly to a coding assistant, the user sends them to a Context Agent first. The Context Agent gathers project memory, checks constraints and prior incidents, reviews the plan, and only then hands execution to a coding assistant through a real A2A JSON-RPC bridge.
+
+The repo also keeps the legacy HTTP endpoints (`/tasks/send`, `/tasks/{run_id}/approval`, and `/tasks/receive`) so the current working demo and CLI flows remain compatible while clients move to the A2A surface.
 
 <p align="center">
   <img src="https://img.shields.io/badge/context-memory-0f766e?style=flat-square" alt="Context memory" />
@@ -39,8 +41,11 @@ Instead of sending prompts directly to a coding assistant, the user sends them t
 
 ## What Works Today
 
+- Real A2A agent card discovery at `/.well-known/agent-card.json`
+- Real A2A JSON-RPC endpoints at `/a2a/{assistant_id}` with `message/send` and `tasks/get`
 - Context Agent workflow: intake -> retrieve -> plan -> classify -> approve -> package -> dispatch
-- A2A handoff to a local CLI Agent over HTTP
+- Context Agent -> CLI Agent handoff over A2A JSON-RPC with safe fallback to the legacy receive route
+- Legacy `/tasks/send` and `/tasks/receive` endpoints remain available
 - Adapter support for `codex`, `claude`, and `cursor`
 - Context retrieval from Supabase, Qdrant Cloud, and Neo4j Aura
 - Interactive terminal app via `contextsuite`
@@ -51,8 +56,26 @@ Instead of sending prompts directly to a coding assistant, the user sends them t
 - Low-risk tasks are auto-approved.
 - Medium-risk tasks are also auto-approved in MVP mode.
 - High-risk tasks pause for human approval before dispatch.
+- High-risk tasks can be resumed through either the legacy approval endpoint or a follow-up A2A `message/send`.
 - File references are wired end to end.
 - Image attachment syntax exists in the CLI, but the current workflow is still text-first. Treat image support as experimental.
+
+## A2A Compatibility
+
+Implemented now:
+
+- `/.well-known/agent-card.json` on both agents, plus the legacy `/.well-known/agent.json` alias
+- `/a2a/contextsuite-context-agent` and `/a2a/contextsuite-cli-agent`
+- JSON-RPC `message/send` on both agents
+- JSON-RPC `tasks/get` on both agents
+- Context Agent approval resume over A2A by sending a follow-up `message/send` with the task ID returned by the first call
+
+Still partial:
+
+- `message/stream` is not implemented yet
+- Push notifications are not implemented
+- Non-blocking/background A2A execution is not implemented yet
+- CLI Agent `tasks/get` is in-memory for the current process, while Context Agent `tasks/get` is backed by persisted run data
 
 ## Workflow
 

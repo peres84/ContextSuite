@@ -140,6 +140,44 @@ All notable changes to ContextSuite are documented in this file.
 - Refreshed `docs/user-guideline.md` to match the real human approval and saved-memory flow
 - Added `docs/fallback/README.md` with fallback capture instructions for demo backups
 
+### Phase 12: Real A2A Protocol Compatibility
+
+- Replaced the old A2A-shaped task/message models with protocol-aligned A2A schemas:
+  - `Task.kind`, `history`, `contextId`, and `status.message`
+  - `Message.messageId`, `taskId`, `contextId`, and `kind`
+  - `TextPart`, `FilePart`, and `DataPart` now use `kind`
+- Rebuilt Agent Cards around the real A2A shape:
+  - `protocolVersion`
+  - `url`
+  - `preferredTransport`
+  - `additionalInterfaces`
+  - `defaultInputModes` / `defaultOutputModes`
+- Added shared JSON-RPC/A2A request models for `message/send` and `tasks/get`
+- Added Context Agent A2A discovery routes:
+  - `GET /.well-known/agent-card.json`
+  - `GET /.well-known/agent.json` (legacy alias)
+  - `GET /a2a/{assistant_id}/.well-known/agent-card.json`
+- Added Context Agent A2A endpoint at `POST /a2a/contextsuite-context-agent`
+- Implemented JSON-RPC `message/send` on the Context Agent as a thin adapter over the existing workflow
+- Implemented JSON-RPC `tasks/get` on the Context Agent backed by persisted runs, approvals, prompts, and outcomes
+- Implemented A2A approval continuation on the Context Agent by reusing the existing human-approval resume logic
+- Added CLI Agent A2A discovery routes and `POST /a2a/contextsuite-cli-agent`
+- Implemented CLI Agent JSON-RPC `message/send` as a thin adapter over the existing execution lifecycle
+- Implemented CLI Agent `tasks/get` backed by in-memory task snapshots for the current process
+- Updated Context Agent dispatch to prefer real A2A JSON-RPC to the CLI Agent and safely fall back to `/tasks/receive`
+- Preserved the legacy working endpoints:
+  - Context Agent: `/tasks/send`, `/tasks/{run_id}/approval`
+  - CLI Agent: `/tasks/receive`
+- Added 7 new A2A server/dispatch tests and expanded shared contract coverage
+- Verified the full Python test suite: 56 passing tests
+
+### Remaining A2A Gaps
+
+- `message/stream` is not implemented yet
+- Push notifications are not implemented
+- Non-blocking/background A2A execution is not implemented yet
+- CLI Agent `tasks/get` is in-memory only
+
 ### Full A2A E2E Verified
 
 - Context Agent → CLI Agent round-trip working over HTTP

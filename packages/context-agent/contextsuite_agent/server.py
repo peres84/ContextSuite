@@ -1,11 +1,34 @@
-"""HTTP/A2A server for the Context Agent."""
+"""HTTP and A2A server for the Context Agent."""
+
+from __future__ import annotations
 
 import logging
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from contextsuite_shared.a2a import (
+    A2A_TASK_NOT_RESUMABLE,
+    JSONRPC_INVALID_PARAMS,
+    JSONRPC_INVALID_REQUEST,
+    JSONRPC_METHOD_NOT_FOUND,
+    JSONRPCRequest,
+    MessageSendParams,
+    TaskQueryParams,
+)
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from contextsuite_agent.a2a import (
+    build_agent_card,
+    build_task_from_result,
+    can_resume_task,
+    ensure_assistant_id,
+    extract_approval_response,
+    extract_submission,
+    get_persisted_task,
+    jsonrpc_error,
+    jsonrpc_success,
+    task_not_found_error,
+)
 from contextsuite_agent.config import settings
 
 logging.basicConfig(
@@ -78,13 +101,36 @@ async def health():
     return {"status": "ok", "service": "context-agent"}
 
 
-@app.get("/.well-known/agent.json")
-async def agent_card():
-    from contextsuite_shared.agent_card import build_context_agent_card
+def _base_url(request: Request) -> str:
+    return str(request.base_url).rstrip("/")
 
-    base_url = f"http://{settings.context_agent_host}:{settings.context_agent_port}"
-    card = build_context_agent_card(base_url)
-    return card.model_dump()
+
+def _agent_card_payload(base_url: str) -> dict:
+    return build_agent_card(base_url).model_dump(by_alias=True, exclude_none=True)
+
+
+@app.get("/.well-known/agent-card.json")
+async def agent_card(request: Request, assistant_id: str | None = None):
+    if assistant_id:
+        try:
+            ensure_assistant_id(assistant_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _agent_card_payload(_base_url(request))
+
+
+@app.get("/.well-known/agent.json")
+async def legacy_agent_card(request: Request, assistant_id: str | None = None):
+    return await agent_card(request, assistant_id=assistant_id)
+
+
+@app.get("/a2a/{assistant_id}/.well-known/agent-card.json")
+async def scoped_agent_card(request: Request, assistant_id: str):
+    try:
+        ensure_assistant_id(assistant_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _agent_card_payload(_base_url(request))
 
 
 @app.post("/tasks/send")
@@ -92,11 +138,13 @@ async def send_task(request: TaskRequest):
     """Submit a prompt through the full Context Agent workflow."""
     from contextsuite_agent.workflow import workflow
 
-    result = workflow.invoke({
-        "prompt": request.prompt,
-        "repository": request.repository,
-        "assistant": request.assistant,
-    })
+    result = workflow.invoke(
+        {
+            "prompt": request.prompt,
+            "repository": request.repository,
+            "assistant": request.assistant,
+        }
+    )
     return build_task_response(result)
 
 
@@ -126,6 +174,129 @@ async def resolve_approval(run_id: str, request: ApprovalResolutionRequest):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return build_task_response(result)
+
+
+@app.post("/a2a/{assistant_id}")
+async def a2a_endpoint(assistant_id: str, request: dict):
+    """Handle A2A JSON-RPC requests for the Context Agent."""
+    try:
+        ensure_assistant_id(assistant_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    try:
+        rpc_request = JSONRPCRequest.model_validate(request)
+    except Exception as exc:
+        return jsonrpc_error(
+            None,
+            code=JSONRPC_INVALID_REQUEST,
+            message="Invalid JSON-RPC request.",
+            data=str(exc),
+        )
+
+    if rpc_request.jsonrpc != "2.0":
+        return jsonrpc_error(
+            rpc_request.id,
+            code=JSONRPC_INVALID_REQUEST,
+            message="Only JSON-RPC 2.0 is supported.",
+        )
+
+    if rpc_request.method == "message/send":
+        return await _handle_message_send(rpc_request)
+    if rpc_request.method == "tasks/get":
+        return _handle_tasks_get(rpc_request)
+    if rpc_request.method == "message/stream":
+        return jsonrpc_error(
+            rpc_request.id,
+            code=JSONRPC_METHOD_NOT_FOUND,
+            message="message/stream is not implemented by this agent.",
+        )
+
+    return jsonrpc_error(
+        rpc_request.id,
+        code=JSONRPC_METHOD_NOT_FOUND,
+        message=f"Unsupported A2A method: {rpc_request.method}",
+    )
+
+
+async def _handle_message_send(rpc_request: JSONRPCRequest) -> dict:
+    from contextsuite_agent.persistence import RunsRepo
+    from contextsuite_agent.workflow import workflow
+    from contextsuite_agent.workflow.resume import resolve_human_approval
+
+    try:
+        params = MessageSendParams.model_validate(rpc_request.params or {})
+    except Exception as exc:
+        return jsonrpc_error(
+            rpc_request.id,
+            code=JSONRPC_INVALID_PARAMS,
+            message="Invalid parameters for message/send.",
+            data=str(exc),
+        )
+
+    history_length = params.configuration.history_length if params.configuration else None
+    message = params.message
+
+    if message.task_id:
+        if RunsRepo.get_run(message.task_id) is None:
+            return task_not_found_error(rpc_request.id, message.task_id)
+        if not can_resume_task(message.task_id):
+            return jsonrpc_error(
+                rpc_request.id,
+                code=A2A_TASK_NOT_RESUMABLE,
+                message=f"Task {message.task_id} is not awaiting additional input.",
+            )
+
+        decision = extract_approval_response(message)
+        if not decision:
+            return jsonrpc_error(
+                rpc_request.id,
+                code=JSONRPC_INVALID_PARAMS,
+                message=(
+                    "Approval continuations must include a data part with "
+                    "`approved`, `reviewer`, and optional `reason`."
+                ),
+            )
+
+        try:
+            result = resolve_human_approval(run_id=message.task_id, **decision)
+        except ValueError:
+            return task_not_found_error(rpc_request.id, message.task_id)
+
+        task = build_task_from_result(result, message, history_length=history_length)
+        return jsonrpc_success(rpc_request.id, task.model_dump(by_alias=True, exclude_none=True))
+
+    try:
+        submission = extract_submission(message, params.metadata)
+    except ValueError as exc:
+        return jsonrpc_error(
+            rpc_request.id,
+            code=JSONRPC_INVALID_PARAMS,
+            message=str(exc),
+        )
+
+    result = workflow.invoke(submission)
+    task = build_task_from_result(result, message, history_length=history_length)
+    return jsonrpc_success(rpc_request.id, task.model_dump(by_alias=True, exclude_none=True))
+
+
+def _handle_tasks_get(rpc_request: JSONRPCRequest) -> dict:
+    try:
+        params = TaskQueryParams.model_validate(rpc_request.params or {})
+    except Exception as exc:
+        return jsonrpc_error(
+            rpc_request.id,
+            code=JSONRPC_INVALID_PARAMS,
+            message="Invalid parameters for tasks/get.",
+            data=str(exc),
+        )
+
+    try:
+        task = get_persisted_task(params.id, history_length=params.history_length)
+    except LookupError:
+        return task_not_found_error(rpc_request.id, params.id)
+
+    return jsonrpc_success(rpc_request.id, task.model_dump(by_alias=True, exclude_none=True))
 
 
 def main():

@@ -2,6 +2,11 @@
 
 This document explains how to run, test, and verify the ContextSuite pipeline.
 
+The pipeline can now be exercised through either:
+
+- The legacy HTTP endpoints used by the current CLI/demo flow
+- The real A2A JSON-RPC surface at `/a2a/{assistant_id}`
+
 ## Prerequisites
 
 1. **Python 3.12+** and **uv** installed
@@ -120,6 +125,30 @@ curl -X POST http://127.0.0.1:8000/tasks/send \
 
 Expected: `approval.approved: true`, `status` reaches `completed` when the CLI Agent is running, and `task_id` is set.
 
+### Send the same low-risk prompt through the A2A endpoint
+
+```bash
+curl -X POST http://127.0.0.1:8000/a2a/contextsuite-context-agent \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "req-1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "messageId": "msg-1",
+        "role": "user",
+        "parts": [
+          { "kind": "text", "text": "Fix the webhook handler to validate optional email fields before calling .lower() on them" },
+          { "kind": "data", "data": { "repository": "acme/payments", "assistant": "codex" } }
+        ]
+      }
+    }
+  }'
+```
+
+Expected: the JSON-RPC `result` is an A2A `Task` with `status.state: "completed"`, `result.id` equal to the Context Agent `run_id`, and `result.metadata.cliTaskId` populated after dispatch.
+
 ### Send a high-risk prompt (should require human approval)
 
 ```bash
@@ -150,6 +179,42 @@ curl -X POST http://127.0.0.1:8000/tasks/<run-id>/approval \
 
 Expected: the run continues to dispatch, `status` reaches `completed` when the CLI Agent is running, and `saved_memory.saved` is `true` when issue-related context was involved.
 
+### Resume the same escalated run through A2A
+
+Use the `result.id` and `result.contextId` returned by the first A2A call:
+
+```bash
+curl -X POST http://127.0.0.1:8000/a2a/contextsuite-context-agent \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "req-2",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "messageId": "msg-2",
+        "taskId": "<run-id>",
+        "contextId": "<trace-id>",
+        "role": "user",
+        "parts": [
+          {
+            "kind": "data",
+            "data": {
+              "approval": {
+                "approved": true,
+                "reviewer": "human-cli",
+                "reason": "Reviewed by operator"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }'
+```
+
+Expected: the JSON-RPC `result.status.state` reaches `completed` when the CLI Agent is running.
+
 ### Send a policy-violating prompt (should be blocked)
 
 ```bash
@@ -171,7 +236,20 @@ Expected: `approval.approved: false`, `approval.reason` mentions "Policy violati
 curl http://127.0.0.1:8000/health
 
 # Agent Card (A2A discovery)
-curl http://127.0.0.1:8000/.well-known/agent.json
+curl http://127.0.0.1:8000/.well-known/agent-card.json
+
+# A2A task polling
+curl -X POST http://127.0.0.1:8000/a2a/contextsuite-context-agent \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "req-3",
+    "method": "tasks/get",
+    "params": {
+      "id": "<run-id>",
+      "historyLength": 2
+    }
+  }'
 ```
 
 ## Unit Tests
@@ -190,10 +268,13 @@ uv run pytest packages/context-agent/tests/test_ingestion.py -v
 uv run pytest packages/context-agent/tests/test_workflow.py -v
 ```
 
-Current test counts (42 total):
-- `test_contracts.py` — 25 tests (A2A schemas, agent cards, types)
+Current test counts (56 total):
+- `test_contracts.py` — 28 tests (A2A schemas, JSON-RPC, agent cards, types)
 - `test_ingestion.py` — 9 tests (chunker, document sources)
 - `test_workflow.py` — 8 tests (risk classification)
+- `test_context_a2a_server.py` — 4 tests (Context Agent A2A discovery, send, polling, approval resume)
+- `test_dispatch_a2a.py` — 1 test (Context Agent -> CLI Agent real A2A dispatch adapter)
+- `test_cli_a2a_server.py` — 2 tests (CLI Agent A2A send, polling, legacy compatibility)
 
 ## Linting
 
@@ -245,7 +326,7 @@ These queries can be run via the Supabase MCP (`mcp__supabase__execute_sql`) or 
 User prompt
     │
     ▼
-POST /tasks/send
+POST /tasks/send or JSON-RPC POST /a2a/contextsuite-context-agent
     │
     ▼
 ┌─────────┐   ┌──────────┐   ┌──────┐   ┌──────────┐   ┌─────────┐   ┌─────────┐
