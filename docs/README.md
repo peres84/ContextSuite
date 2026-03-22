@@ -21,6 +21,7 @@ This folder collects the main operator, demo, and architecture docs for ContextS
 
 - [plan.md](plan.md) - MVP checklist with current phase status
 - [plan/](plan/) - pitch, mockups, and planning artifacts
+- [fallback/README.md](fallback/README.md) - how to capture fallback demo output
 
 ## Current Workflow Highlights
 

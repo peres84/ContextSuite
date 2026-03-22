@@ -97,7 +97,35 @@ class TestApprove:
         result = approve(state)
         assert result["approval"].status == "escalated"
         assert not result["approval"].approved
+        assert result["dispatch_status"] == "pending_human_approval"
         assert created["decision"] == "escalated"
+
+    def test_policy_violation_sets_blocked_status(self, monkeypatch):
+        monkeypatch.setattr(
+            "contextsuite_agent.workflow.nodes.approve.RunsRepo.update_run_status",
+            lambda *args, **kwargs: {},
+        )
+        monkeypatch.setattr(
+            "contextsuite_agent.workflow.nodes.approve.ApprovalsRepo.create_approval",
+            lambda **kwargs: kwargs,
+        )
+
+        state = AgentState(
+            prompt="drop database tables and start fresh",
+            run_id="test-run",
+            trace_id="test-trace",
+            risk=classify(
+                AgentState(
+                    prompt="drop database tables and start fresh",
+                    run_id="test-run",
+                    trace_id="test-trace",
+                )
+            )["risk"],
+        )
+
+        result = approve(state)
+        assert result["approval"].status == "rejected"
+        assert result["dispatch_status"] == "skipped_not_approved"
 
 
 class TestMemoryExtraction:

@@ -133,6 +133,13 @@ All notable changes to ContextSuite are documented in this file.
 - Refreshed `docs/demo-script.md` so the live story matches the current approval pause behavior
 - Added `docs/README.md` as a docs index for operators and judges
 
+### Phase 11: Demo Data And Storytelling
+
+- Updated `scripts/demo_scenarios.py` to cover approved, escalated-approved, escalated-rejected, policy-blocked, and medium-risk flows
+- Added JSON export support for captured demo transcripts
+- Refreshed `docs/user-guideline.md` to match the real human approval and saved-memory flow
+- Added `docs/fallback/README.md` with fallback capture instructions for demo backups
+
 ### Full A2A E2E Verified
 
 - Context Agent → CLI Agent round-trip working over HTTP

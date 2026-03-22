@@ -1,6 +1,6 @@
 # User Guideline
 
-This guide is the fastest way to validate the current MVP yourself from a clean checkout.
+This guide is the fastest way to validate the current MVP from a clean checkout.
 
 ## What You Will Verify
 
@@ -9,7 +9,9 @@ This guide is the fastest way to validate the current MVP yourself from a clean 
 - Demo memory can be seeded
 - The Context Agent and CLI Agent can run locally
 - A low-risk prompt is approved and dispatched
-- A dangerous prompt is blocked before execution
+- A high-risk prompt pauses for human approval
+- A policy-violating prompt is blocked immediately
+- Issue-related memory is saved after completion
 
 ## 1. Prerequisites
 
@@ -34,8 +36,6 @@ For Cursor, make sure the `cursor` command is available on your `PATH`.
 
 ## 2. Create `.env`
 
-Copy the template:
-
 PowerShell:
 
 ```powershell
@@ -52,9 +52,8 @@ Fill in every required variable.
 
 Important Neo4j details:
 
-- `NEO4J_URI` should use the `neo4j+s://` scheme
+- `NEO4J_URI` should use `neo4j+s://`
 - `NEO4J_DATABASE` should be your Aura database ID
-- Do not assume the database name is `neo4j`
 
 ## 3. Install dependencies
 
@@ -62,9 +61,7 @@ Important Neo4j details:
 uv sync --all-packages
 ```
 
-## 4. Run the local-only tests
-
-This step does not require cloud access.
+## 4. Run local-only tests
 
 ```bash
 uv run pytest -q
@@ -74,13 +71,11 @@ If this fails, fix that before testing the full flow.
 
 ## 5. Check external services
 
-Run all connectivity checks:
-
 ```bash
 uv run python scripts/test_all.py
 ```
 
-Or test services individually:
+Or individually:
 
 ```bash
 uv run python scripts/test_supabase.py
@@ -89,19 +84,10 @@ uv run python scripts/test_neo4j.py
 uv run python scripts/test_gemini.py
 ```
 
-Expected result: each script should report a successful connection or a clear configuration error.
-
 ## 6. Seed the demo data
-
-First ingest the textual demo context:
 
 ```bash
 uv run python scripts/ingest_demo.py
-```
-
-Then set up and seed the Neo4j graph:
-
-```bash
 uv run python scripts/setup_neo4j.py
 uv run python scripts/seed_neo4j.py
 ```
@@ -109,9 +95,8 @@ uv run python scripts/seed_neo4j.py
 At the end you should have:
 
 - Demo repository: `acme/payments`
-- Supabase documents and run metadata
-- Qdrant vectors for retrieval
-- Neo4j nodes and relationships for issues, files, dependencies, and constraints
+- Incidents, ADRs, and constraints in retrieval memory
+- Neo4j issue and dependency graph data
 
 ## 7. Start both services
 
@@ -133,11 +118,6 @@ Optional verification:
 uv run python scripts/test_services.py
 ```
 
-The health endpoints are:
-
-- Context Agent: `http://127.0.0.1:8000/health`
-- CLI Agent: `http://127.0.0.1:8001/health`
-
 ## 8. Initialize a demo workspace
 
 ```bash
@@ -145,11 +125,7 @@ uv run contextsuite -p ./demo-project init -r "acme/payments" -a codex
 uv run contextsuite -p ./demo-project status
 ```
 
-This creates `.contextsuite.json` in the target project directory.
-
 ## 9. Run an approved prompt
-
-One-shot mode:
 
 ```bash
 uv run contextsuite -p ./demo-project chat "Add a null check for the customer email field in the webhook handler. The handler crashes when Stripe sends a guest checkout event where email is null."
@@ -159,12 +135,13 @@ Expected behavior:
 
 - Context is retrieved from prior incidents and constraints
 - A plan is generated
-- Risk is classified as `low`
-- The task is approved
+- Risk is `low`
+- The task is auto-approved
 - The task is dispatched to the CLI Agent
-- The selected assistant CLI runs in the local workspace
+- The selected assistant CLI runs locally
+- Saved issue memory is shown after execution
 
-## 10. Run a blocked prompt
+## 10. Run an escalated prompt
 
 ```bash
 uv run contextsuite -p ./demo-project chat "Delete all records from the production payments table and drop the billing_history table."
@@ -172,17 +149,92 @@ uv run contextsuite -p ./demo-project chat "Delete all records from the producti
 
 Expected behavior:
 
-- Risk is classified as `high`
-- The task is rejected
+- Risk is `high`
+- The run pauses for human approval
+- The CLI asks whether to approve the run
+- Rejecting it stops execution
+- Approving it resumes the same run and preserves the approval trail
+
+## 11. Run a policy-blocked prompt
+
+```bash
+uv run contextsuite -p ./demo-project chat "drop database tables and start fresh"
+```
+
+Expected behavior:
+
+- The run is rejected immediately by policy
+- No human approval is requested
 - No coding assistant is executed
 
-## 11. Use interactive mode
+## 12. Verify saved memory directly
+
+After an approved issue-related run, query Supabase:
+
+```sql
+SELECT title, source_type, metadata
+FROM documents
+WHERE source_type = 'issue_memory'
+ORDER BY created_at DESC
+LIMIT 5;
+```
+
+Expected behavior:
+
+- New `issue_memory` records appear
+- `metadata` includes the `run_id`, related issues, constraints, and approval status
+
+## 13. Run the canned demo scenarios
+
+With both services running:
+
+```bash
+uv run python scripts/demo_scenarios.py
+```
+
+Useful variants:
+
+```bash
+uv run python scripts/demo_scenarios.py approved
+uv run python scripts/demo_scenarios.py escalated_approved
+uv run python scripts/demo_scenarios.py escalated_rejected
+uv run python scripts/demo_scenarios.py policy_blocked
+uv run python scripts/demo_scenarios.py --json-out docs/fallback/demo-output.json
+```
+
+## 14. Use the API directly
+
+Start a run:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tasks/send \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Delete all records from the production payments table and drop the billing_history table.",
+    "repository": "acme/payments",
+    "assistant": "codex"
+  }'
+```
+
+Resolve an escalated approval:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tasks/<run-id>/approval \
+  -H "Content-Type: application/json" \
+  -d '{
+    "approved": true,
+    "reviewer": "human-cli",
+    "reason": "Manual approval for demo"
+  }'
+```
+
+## 15. Interactive mode tips
 
 ```bash
 uv run contextsuite -p ./demo-project chat
 ```
 
-Useful commands inside the session:
+Useful commands:
 
 - `/help`
 - `/status`
@@ -200,62 +252,9 @@ Prompt features:
 
 Current limitation:
 
-- File references are part of the request path today.
-- Image attachment syntax exists in the CLI, but the current workflow is still text-first, so do not rely on image processing for the main demo.
+- Image syntax exists in the CLI, but the workflow is still text-first, so do not rely on image processing for the main demo.
 
-## 12. Run the canned demo scenarios
-
-With both services running:
-
-```bash
-uv run python scripts/demo_scenarios.py
-```
-
-Or run a single scenario:
-
-```bash
-uv run python scripts/demo_scenarios.py approved
-uv run python scripts/demo_scenarios.py blocked
-uv run python scripts/demo_scenarios.py medium
-```
-
-## 13. If you want to test the API directly
-
-```bash
-curl -X POST http://127.0.0.1:8000/tasks/send \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "Add a null check for the customer email field in the webhook handler",
-    "repository": "acme/payments",
-    "assistant": "codex"
-  }'
-```
-
-Approved requests require the CLI Agent to be running, because dispatch is synchronous in the current MVP.
-
-## 14. Troubleshooting
-
-### `Context Agent` is reachable but approved prompts fail
-
-The CLI Agent is probably not running on `127.0.0.1:8001`.
-
-### `Neo4j` fails with database errors
-
-Check that `NEO4J_DATABASE` matches the Aura database ID exactly.
-
-### `Supabase` or `Qdrant` connection is refused
-
-Check the `.env` values first. The current test scripts will fail fast if the service URL or key is wrong.
-
-### The assistant runs are rejected immediately
-
-That is expected for high-risk or blocked prompts. Use the safe webhook null-check prompt first.
-
-### The assistant CLI cannot be found
-
-Install the selected assistant CLI and verify it is on your `PATH`.
-
-## 15. Recommended manual test order
+## 16. Recommended manual test order
 
 1. `uv run pytest -q`
 2. `uv run python scripts/test_all.py`
@@ -266,4 +265,7 @@ Install the selected assistant CLI and verify it is on your `PATH`.
 7. `uv run cli-agent`
 8. `uv run contextsuite -p ./demo-project init -r "acme/payments" -a codex`
 9. Run the approved prompt
-10. Run the blocked prompt
+10. Run the escalated prompt and reject it once
+11. Run the escalated prompt and approve it once
+12. Run the policy-blocked prompt
+13. Run `uv run python scripts/demo_scenarios.py`

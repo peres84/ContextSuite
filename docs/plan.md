@@ -192,16 +192,16 @@ Exit criteria:
 
 ## Phase 11: Demo Data And Storytelling
 
-- [ ] Prepare one sample repository or controlled project target
-- [ ] Prepare a realistic incident history for retrieval
-- [ ] Prepare one prompt that should be approved
-- [ ] Prepare one prompt that should be blocked or escalated
-- [ ] Prepare a short script for the live demo
+- [x] Prepare one sample repository or controlled project target
+- [x] Prepare a realistic incident history for retrieval
+- [x] Prepare one prompt that should be approved
+- [x] Prepare one prompt that should be blocked or escalated
+- [x] Prepare a short script for the live demo
 - [ ] Prepare fallback screenshots or recordings in case of live failure
 
 Exit criteria:
 
-- [ ] The demo tells a clear before-and-after story
+- [x] The demo tells a clear before-and-after story
 - [ ] The team can present the system in under three minutes
 
 ## Phase 12: Testing And Reliability

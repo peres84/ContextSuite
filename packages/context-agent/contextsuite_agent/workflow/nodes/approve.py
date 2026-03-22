@@ -30,6 +30,7 @@ def approve(state: AgentState) -> AgentState:
     combined = f"{prompt} {plan_text}"
 
     risk_level = risk_assessment.level
+    dispatch_status = state.get("dispatch_status")
 
     # Policy check — blocked patterns
     violations = []
@@ -49,6 +50,7 @@ def approve(state: AgentState) -> AgentState:
         )
         RunsRepo.update_run_status(run_id, "rejected")
         logger.warning("approve: run=%s REJECTED (policy violation)", run_id)
+        dispatch_status = "skipped_not_approved"
     elif risk_level == "low":
         decision = ApprovalDecision(
             approved=True,
@@ -85,6 +87,7 @@ def approve(state: AgentState) -> AgentState:
         )
         RunsRepo.update_run_status(run_id, "reviewing")
         logger.warning("approve: run=%s ESCALATED (high risk, needs human approval)", run_id)
+        dispatch_status = "pending_human_approval"
 
     # Persist approval
     ApprovalsRepo.create_approval(
@@ -96,4 +99,7 @@ def approve(state: AgentState) -> AgentState:
         policy_violations=decision.policy_violations,
     )
 
-    return {**state, "approval": decision}
+    next_state = {**state, "approval": decision}
+    if dispatch_status:
+        next_state["dispatch_status"] = dispatch_status
+    return next_state
