@@ -79,7 +79,7 @@ Still partial:
 
 ## Workflow
 
-![ContextSuite workflow](docs/workflow.png)
+![ContextSuite workflow](docs/workflow-new.png)
 
 ## Why It Exists
 
