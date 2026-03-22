@@ -63,6 +63,80 @@ class TestClassify:
         assert result["risk"].level == "high"
         assert len(result["risk"].signals) >= 3
 
+    def test_high_risk_when_prompt_conflicts_with_retrieved_brand_constraint(self):
+        state = AgentState(
+            prompt="Refresh the landing page styling and change the primary color to red.",
+            run_id="test-run",
+            trace_id="test-trace",
+            context_sources=[
+                {
+                    "source": "vector",
+                    "content": (
+                        "Constraint: The primary brand color must remain green. "
+                        "Do not switch the global theme from green to red."
+                    ),
+                    "metadata": {
+                        "title": "Constraint: primary brand color must stay green",
+                    },
+                }
+            ],
+        )
+
+        result = classify(state)
+        assert result["risk"].level == "high"
+        assert any(
+            "primary brand color must remain green" in signal.signal
+            for signal in result["risk"].signals
+        )
+
+    def test_does_not_flag_when_prompt_keeps_required_brand_color(self):
+        state = AgentState(
+            prompt="Improve spacing and typography but keep the primary green theme.",
+            run_id="test-run",
+            trace_id="test-trace",
+            context_sources=[
+                {
+                    "source": "vector",
+                    "content": "Constraint: The primary brand color must remain green.",
+                    "metadata": {
+                        "title": "Constraint: primary brand color must stay green",
+                    },
+                }
+            ],
+        )
+
+        result = classify(state)
+        assert result["risk"].level == "low"
+        assert not any(
+            "violates retrieved constraint" in signal.signal for signal in result["risk"].signals
+        )
+
+    def test_does_not_flag_when_only_plan_mentions_forbidden_color_as_warning(self):
+        state = AgentState(
+            prompt="Improve spacing and typography but keep the primary green theme.",
+            plan=(
+                "Keep the primary green theme. Do not change the global theme from green "
+                "to red."
+            ),
+            run_id="test-run",
+            trace_id="test-trace",
+            context_sources=[
+                {
+                    "source": "vector",
+                    "content": "Constraint: The primary brand color must remain green.",
+                    "metadata": {
+                        "title": "Constraint: primary brand color must stay green",
+                    },
+                }
+            ],
+        )
+
+        result = classify(state)
+        assert result["risk"].level == "low"
+        assert not any(
+            "violates retrieved constraint" in signal.signal for signal in result["risk"].signals
+        )
+
 
 class TestApprove:
     def test_high_risk_escalates_for_human_review(self, monkeypatch):

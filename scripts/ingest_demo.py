@@ -15,8 +15,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from contextsuite_agent.config import settings  # noqa: E402
 from contextsuite_agent.ingestion import DocumentSource, SourceType, ingest_documents  # noqa: E402
 from contextsuite_agent.persistence.client import get_supabase  # noqa: E402
+from contextsuite_agent.retrieval.vector import get_qdrant  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Demo documents — realistic context for acme/payments repository
@@ -153,6 +155,26 @@ DEMO_DOCS: list[dict] = [
 ]
 
 
+def _clear_existing_demo_documents(repo_id: str) -> None:
+    sb = get_supabase()
+    existing = (
+        sb.table("documents")
+        .select("id, vector_id")
+        .eq("repository_id", repo_id)
+        .execute()
+    )
+    rows = existing.data or []
+    if not rows:
+        return
+
+    vector_ids = [row["vector_id"] for row in rows if row.get("vector_id")]
+    if vector_ids:
+        get_qdrant().delete(settings.qdrant_collection, points_selector=vector_ids, wait=True)
+
+    sb.table("documents").delete().eq("repository_id", repo_id).execute()
+    print(f"Cleared {len(rows)} existing demo document chunks")
+
+
 def main() -> None:
     """Run the demo ingestion."""
     # Look up or create the demo repository
@@ -170,6 +192,8 @@ def main() -> None:
         )
         repo_id = result.data[0]["id"]
         print(f"Created repository: {repo_id}")
+
+    _clear_existing_demo_documents(repo_id)
 
     # Build DocumentSource objects
     sources = [

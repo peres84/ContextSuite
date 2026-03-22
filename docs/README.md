@@ -8,6 +8,7 @@ This folder collects the main operator, demo, and architecture docs for ContextS
 - [workflow.md](workflow.md) - end-to-end workflow, approval states, and saved memory behavior
 - [pipeline.md](pipeline.md) - how to run, test, and verify the pipeline
 - [demo-script.md](demo-script.md) - short live demo script
+- [green-guard-demo.md](green-guard-demo.md) - step-by-step runbook for the green-brand constraint demo
 - [user-guideline.md](user-guideline.md) - step-by-step operator guide
 
 ## Architecture And Data

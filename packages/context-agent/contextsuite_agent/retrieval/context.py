@@ -40,7 +40,11 @@ def retrieve_context(
     # --- Vector search ---
     try:
         query_vector = embed_text(prompt)
-        scored_points = search_similar(query_vector, limit=max_results)
+        scored_points = search_similar(
+            query_vector,
+            limit=max_results,
+            repository_id=repository_id,
+        )
 
         for point in scored_points:
             payload = point.payload or {}
