@@ -11,15 +11,13 @@
 <p align="center">
   <a href="#license"><img src="https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge" alt="MIT License" /></a>
   <a href="#workflow"><img src="https://img.shields.io/badge/Workflow-A2A%20First-2563eb?style=for-the-badge" alt="A2A First Workflow" /></a>
-  <a href="#mvp-goal"><img src="https://img.shields.io/badge/Status-Hackathon%20MVP-f59e0b?style=for-the-badge" alt="Hackathon MVP" /></a>
+  <a href="#workflow"><img src="https://img.shields.io/badge/Status-Active-16a34a?style=for-the-badge" alt="Active" /></a>
   <a href="#architecture-snapshot"><img src="https://img.shields.io/badge/Orchestration-LangGraph-111827?style=for-the-badge" alt="LangGraph Orchestration" /></a>
 </p>
 
 ContextSuite is a context, governance, and memory layer for AI coding workflows.
 
 Instead of sending prompts directly to a coding assistant, the user sends them to a Context Agent first. The Context Agent gathers project memory, checks constraints and prior incidents, reviews the plan, and only then hands execution to a coding assistant through a real A2A JSON-RPC bridge.
-
-The repo also keeps the legacy HTTP endpoints (`/tasks/send`, `/tasks/{run_id}/approval`, and `/tasks/receive`) so the current working demo and CLI flows remain compatible while clients move to the A2A surface.
 
 <p align="center">
   <img src="https://img.shields.io/badge/context-memory-0f766e?style=flat-square" alt="Context memory" />
@@ -39,26 +37,38 @@ The repo also keeps the legacy HTTP endpoints (`/tasks/send`, `/tasks/{run_id}/a
   <img src="https://img.shields.io/badge/Coding_Agents-Codex%20%7C%20Claude%20Code%20%7C%20Cursor-4b5563?style=flat-square" alt="Supported coding agents" />
 </p>
 
+## Workflow
+
+When a user sends a prompt, the following steps happen automatically:
+
+1. **Intake** — The Context Agent receives the prompt and classifies the request:
+   - *New feature* — searches project documentation, prior art, and relevant code to assemble the best available context.
+   - *Bug or fix* — researches related bugs, past issues, and how similar problems were previously solved.
+
+2. **Key Findings** — The Context Agent compiles its findings—relevant code, constraints, past decisions, and known risks—into a structured context package.
+
+3. **Plan Request** — The context package is sent to the Coder Agent via the configured coding assistant adapter (Codex, Claude Code, or Cursor CLI), which prepares a detailed execution plan and returns it.
+
+4. **Review & Governance** — The Context Agent reviews the plan against project constraints, legacy rules, and risk level:
+   - *Approved* — the plan is clean, constraints are met, nothing is at risk. Execution proceeds.
+   - *Rejected or Delegated* — the Context Agent explains exactly why the plan fails and sends the feedback back to the Coder Agent, which must revise and resubmit.
+
+5. **Execution** — Once the plan passes review, the Context Agent dispatches the approved task to the Coder Agent over A2A JSON-RPC. The Coder Agent executes the change in the local workspace and returns the result.
+
+6. **Memory** — After every resolved fix or completed feature, the issue, solution, and key decisions are indexed into project memory (Supabase, Qdrant, Neo4j) so future requests benefit from what was learned.
+
+![ContextSuite workflow](docs/workflow-new.png)
+
 ## What Works Today
 
 - Real A2A agent card discovery at `/.well-known/agent-card.json`
 - Real A2A JSON-RPC endpoints at `/a2a/{assistant_id}` with `message/send` and `tasks/get`
-- Context Agent workflow: intake -> retrieve -> plan -> classify -> approve -> package -> dispatch
-- Context Agent -> CLI Agent handoff over A2A JSON-RPC with safe fallback to the legacy receive route
-- Legacy `/tasks/send` and `/tasks/receive` endpoints remain available
+- Context Agent workflow: intake → retrieve → plan → classify → approve → package → dispatch
+- Context Agent → CLI Agent handoff over A2A JSON-RPC
 - Adapter support for `codex`, `claude`, and `cursor`
 - Context retrieval from Supabase, Qdrant Cloud, and Neo4j Aura
 - Interactive terminal app via `contextsuite`
 - Demo repository and scenarios for `acme/payments`
-
-## MVP Notes
-
-- Low-risk tasks are auto-approved.
-- Medium-risk tasks are also auto-approved in MVP mode.
-- High-risk tasks pause for human approval before dispatch.
-- High-risk tasks can be resumed through either the legacy approval endpoint or a follow-up A2A `message/send`.
-- File references are wired end to end.
-- Image attachment syntax exists in the CLI, but the current workflow is still text-first. Treat image support as experimental.
 
 ## A2A Compatibility
 
@@ -77,17 +87,9 @@ Still partial:
 - Non-blocking/background A2A execution is not implemented yet
 - CLI Agent `tasks/get` is in-memory for the current process, while Context Agent `tasks/get` is backed by persisted run data
 
-## Workflow
-
-![ContextSuite workflow](docs/workflow-new.png)
-
 ## Why It Exists
 
 AI coding tools are fast, but they often lose important project context over time. Teams repeat bugs, miss constraints, and forget why past decisions were made. ContextSuite keeps that memory available at the moment a change is requested.
-
-## MVP Goal
-
-Build a demo where a user sends a prompt to ContextSuite, ContextSuite reviews the task, then forwards an approved job over A2A to a Local Agent Client that runs Codex, Claude Code, or Cursor CLI and returns the result.
 
 ## Architecture Snapshot
 
@@ -210,16 +212,6 @@ For the exact prompts, exact legacy HTTP requests, and exact A2A JSON-RPC payloa
 | `uv run ruff check .` | Lint the repo |
 | `uv run ruff format .` | Format the repo |
 | `uv run pytest -q` | Run tests |
-
-## Near-Term Outcome
-
-Prove a simple end-to-end flow:
-
-- one prompt in
-- one reviewed plan
-- one approved A2A task
-- one coding assistant execution
-- one stored memory trail
 
 ## Documentation
 
