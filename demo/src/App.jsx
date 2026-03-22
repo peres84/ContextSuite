@@ -25,6 +25,27 @@ const features = [
   },
 ];
 
+const testimonials = [
+  {
+    quote: "Our brand reviews went from chaotic to calm overnight. The green-first approach keeps every team aligned.",
+    name: "Maria Chen",
+    role: "Head of Brand, Luma Labs",
+    initials: "MC",
+  },
+  {
+    quote: "We stopped arguing about button colors and started shipping. One palette, one signal, zero confusion.",
+    name: "James Okoro",
+    role: "Design Lead, Fern Studio",
+    initials: "JO",
+  },
+  {
+    quote: "The constraint-aware reviews caught brand violations we'd been missing for months. Genuinely game-changing.",
+    name: "Priya Desai",
+    role: "VP Engineering, GreenStack",
+    initials: "PD",
+  },
+];
+
 const highlights = [
   { title: "Primary stays green", copy: "Hero accents, buttons, badges, and emphasis all share one approved signal." },
   { title: "Red stays cautionary", copy: "Alerts and destructive states keep their own visual meaning instead of becoming the default CTA color." },
@@ -47,6 +68,9 @@ export default function App() {
         <nav className="top-links" aria-label="Section links">
           <a className="ghost-link" href="#features">
             Features
+          </a>
+          <a className="ghost-link" href="#testimonials">
+            Testimonials
           </a>
           <a className="ghost-link" href="#principles">
             Principles
@@ -135,17 +159,56 @@ export default function App() {
           </aside>
         </section>
 
-        <section className="feature-grid" id="features">
-          {features.map((feature) => (
-            <article className="feature-card" key={feature.title}>
-              <div className="feature-meta">
-                <p className="feature-kicker">{feature.kicker}</p>
-                <span className="feature-tag">{feature.tag}</span>
-              </div>
-              <h3>{feature.title}</h3>
-              <p>{feature.copy}</p>
-            </article>
-          ))}
+        <section className="feature-section section-frame" id="features">
+          <div className="section-header">
+            <p className="eyebrow">Launch foundations</p>
+            <div className="section-heading-row">
+              <h2>Spacing, hierarchy, and guidance all move together.</h2>
+              <p className="section-lead">
+                This safe version keeps the green-first system intact while making the
+                page calmer to scan. The cards breathe more, the sections read in a
+                steadier rhythm, and the main actions still feel like one family.
+              </p>
+            </div>
+          </div>
+
+          <div className="feature-grid">
+            {features.map((feature) => (
+              <article className="feature-card" key={feature.title}>
+                <div className="feature-meta">
+                  <p className="feature-kicker">{feature.kicker}</p>
+                  <span className="feature-tag">{feature.tag}</span>
+                </div>
+                <h3>{feature.title}</h3>
+                <p>{feature.copy}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="testimonials-section section-frame" id="testimonials">
+          <div className="testimonials-header">
+            <p className="eyebrow">What teams are saying</p>
+            <h2>Trusted by brand-conscious teams.</h2>
+            <p className="section-lead testimonials-lead">
+              The testimonials now sit in their own clearer section with stronger
+              spacing, better card separation, and a more readable author block.
+            </p>
+          </div>
+          <div className="testimonials-grid">
+            {testimonials.map((t) => (
+              <article className="testimonial-card" key={t.name}>
+                <blockquote className="testimonial-quote">{t.quote}</blockquote>
+                <div className="testimonial-author">
+                  <div className="testimonial-avatar">{t.initials}</div>
+                  <div>
+                    <strong className="testimonial-name">{t.name}</strong>
+                    <span className="testimonial-role">{t.role}</span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="principles-strip" id="principles">
