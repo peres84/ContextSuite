@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { SignupWizard } from "@/components/auth/signup-wizard"
 
 export const metadata: Metadata = {
@@ -12,11 +13,14 @@ export default function SignupPage() {
     <div className="flex min-h-screen">
       {/* Left Panel - Brand */}
       <div className="hidden flex-1 flex-col justify-between bg-primary p-12 lg:flex">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-foreground">
-            <span className="text-lg font-bold text-primary">CS</span>
-          </div>
-          <span className="text-xl font-semibold text-primary-foreground">ContextSuite</span>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/images/logotype.png"
+            alt="ContextSuite"
+            width={200}
+            height={50}
+            className="h-10 w-auto brightness-0 invert"
+          />
         </Link>
 
         <div className="max-w-md">
@@ -62,11 +66,14 @@ export default function SignupPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="mb-8 flex items-center justify-center lg:hidden">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">CS</span>
-              </div>
-              <span className="text-xl font-semibold text-foreground">ContextSuite</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/images/logotype.png"
+                alt="ContextSuite"
+                width={180}
+                height={45}
+                className="h-10 w-auto"
+              />
             </Link>
           </div>
 

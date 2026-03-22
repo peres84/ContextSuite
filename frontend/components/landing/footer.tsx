@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 
 const footerLinks = {
   Product: [
@@ -33,11 +34,14 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-sm font-bold text-primary-foreground">CS</span>
-              </div>
-              <span className="text-lg font-semibold text-foreground">ContextSuite</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/images/logotype.png"
+                alt="ContextSuite"
+                width={160}
+                height={40}
+                className="h-8 w-auto"
+              />
             </Link>
             <p className="mt-4 text-sm text-muted-foreground">
               Context-first AI governance for development teams.

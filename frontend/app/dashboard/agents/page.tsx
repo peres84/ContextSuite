@@ -41,6 +41,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   Bot,
   Plus,
   MoreVertical,
@@ -129,10 +135,10 @@ export default function AgentsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState<typeof agents[0] | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [copiedAgentId, setCopiedAgentId] = useState<string | null>(null)
   const [newAgent, setNewAgent] = useState({
     name: "",
-    repository: "",
-    profile: "safe-reviewer",
+    repositories: [] as string[],
     riskMode: "medium",
     approvalMode: "human-gated",
   })
@@ -180,9 +186,10 @@ export default function AgentsPage() {
     }
   }
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (agentId: string, text: string) => {
     navigator.clipboard.writeText(text)
-    toast.success("Copied to clipboard!")
+    setCopiedAgentId(agentId)
+    setTimeout(() => setCopiedAgentId(null), 2000)
   }
 
   const toggleAgent = (agentId: string) => {
@@ -219,8 +226,8 @@ export default function AgentsPage() {
       const newAgentData = {
         id: `agent-${Date.now()}`,
         name: newAgent.name,
-        profile: newAgent.profile === "safe-reviewer" ? "Safe Reviewer" : newAgent.profile === "coding-copilot" ? "Coding Copilot" : "Research Assistant",
-        repository: newAgent.repository,
+        profile: "Agent",
+        repository: newAgent.repositories.join(", "),
         status: "healthy",
         riskMode: newAgent.riskMode,
         approvalMode: newAgent.approvalMode === "human-gated" ? "Human-Gated" : "Auto",
@@ -234,10 +241,28 @@ export default function AgentsPage() {
       setAgentList([newAgentData, ...agentList])
       setIsCreating(false)
       setShowCreateDialog(false)
-      setNewAgent({ name: "", repository: "", profile: "safe-reviewer", riskMode: "medium", approvalMode: "human-gated" })
+      setNewAgent({ name: "", repositories: [], riskMode: "medium", approvalMode: "human-gated" })
       toast.success("Agent created successfully!")
     }, 1500)
   }
+
+  const toggleRepository = (repo: string) => {
+    setNewAgent(prev => ({
+      ...prev,
+      repositories: prev.repositories.includes(repo)
+        ? prev.repositories.filter(r => r !== repo)
+        : [...prev.repositories, repo]
+    }))
+  }
+
+  const availableRepositories = [
+    { value: "acme/webapp", label: "acme/webapp" },
+    { value: "acme/api", label: "acme/api" },
+    { value: "acme/mobile", label: "acme/mobile" },
+    { value: "acme/docs", label: "acme/docs" },
+    { value: "acme/infrastructure", label: "acme/infrastructure" },
+    { value: "acme/design-system", label: "acme/design-system" },
+  ]
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -272,37 +297,32 @@ export default function AgentsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Project / Repository</Label>
-                <Select
-                  value={newAgent.repository}
-                  onValueChange={(value) => setNewAgent({ ...newAgent, repository: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select repository" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="acme/webapp">acme/webapp</SelectItem>
-                    <SelectItem value="acme/api">acme/api</SelectItem>
-                    <SelectItem value="acme/mobile">acme/mobile</SelectItem>
-                    <SelectItem value="acme/docs">acme/docs</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Agent Profile</Label>
-                <Select
-                  value={newAgent.profile}
-                  onValueChange={(value) => setNewAgent({ ...newAgent, profile: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="safe-reviewer">Safe Reviewer</SelectItem>
-                    <SelectItem value="coding-copilot">Coding Copilot</SelectItem>
-                    <SelectItem value="research-assistant">Research Assistant</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Repositories (select one or more)</Label>
+                <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+                  {availableRepositories.map((repo) => (
+                    <label
+                      key={repo.value}
+                      className={`flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm transition-colors ${
+                        newAgent.repositories.includes(repo.value)
+                          ? "border-primary bg-primary/5"
+                          : "border-transparent hover:bg-muted"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newAgent.repositories.includes(repo.value)}
+                        onChange={() => toggleRepository(repo.value)}
+                        className="h-4 w-4 rounded border-input accent-primary"
+                      />
+                      <span>{repo.label}</span>
+                    </label>
+                  ))}
+                </div>
+                {newAgent.repositories.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {newAgent.repositories.length} repository(ies) selected
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -342,7 +362,7 @@ export default function AgentsPage() {
               <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateAgent} disabled={!newAgent.name || isCreating}>
+              <Button onClick={handleCreateAgent} disabled={!newAgent.name || newAgent.repositories.length === 0 || isCreating}>
                 {isCreating ? "Creating..." : "Create Agent"}
               </Button>
             </DialogFooter>
@@ -440,14 +460,23 @@ export default function AgentsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyToClipboard(agent.url)}
-                    >
-                      <Copy className="mr-2 h-3 w-3" />
-                      Copy URL
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip open={copiedAgentId === agent.id}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(agent.id, agent.url)}
+                          >
+                            <Copy className="mr-2 h-3 w-3" />
+                            Copy URL
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copied!</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <div className="flex items-center gap-2 px-3">
                       <Switch
                         checked={agent.enabled}

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -61,11 +62,16 @@ function SidebarContent({ pathname }: { pathname: string }) {
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <Shield className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <span className="text-xl font-bold">ContextSuite</span>
+      <div className="flex h-16 items-center border-b px-4">
+        <Link href="/dashboard">
+          <Image
+            src="/images/logotype.png"
+            alt="ContextSuite"
+            width={150}
+            height={38}
+            className="h-8 w-auto"
+          />
+        </Link>
       </div>
 
       {/* Workspace Selector */}
@@ -154,10 +160,15 @@ export default function DashboardLayout({
             <SidebarContent pathname={pathname} />
           </SheetContent>
         </Sheet>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <Shield className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <span className="font-bold">ContextSuite</span>
+        <Link href="/dashboard">
+          <Image
+            src="/images/logotype.png"
+            alt="ContextSuite"
+            width={140}
+            height={35}
+            className="h-7 w-auto"
+          />
+        </Link>
       </header>
 
       <div className="flex">
