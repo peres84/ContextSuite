@@ -1,6 +1,10 @@
 # ContextSuite
 
 <p align="center">
+  <img src="media/logotype.png" alt="ContextSuite logotype" width="520" />
+</p>
+
+<p align="center">
   <strong>Context, governance, and memory for AI coding workflows</strong>
 </p>
 
