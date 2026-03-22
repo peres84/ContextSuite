@@ -35,47 +35,48 @@ Exit criteria:
 
 ## Phase 1: Repository And Developer Setup
 
-- [ ] Create the initial app structure for backend, local client, and shared contracts
-- [ ] Add environment variable templates for Supabase, Qdrant Cloud, Neo4j Aura, Gemini, and A2A config
-- [ ] Add a basic `.env.example`
-- [ ] Add package management and task runner commands
-- [ ] Add linting and formatting
-- [ ] Add a simple local start command for each service
-- [ ] Add README sections for local setup and project structure
+- [x] Create the initial app structure for backend, local client, and shared contracts
+- [x] Add environment variable templates for Supabase, Qdrant Cloud, Neo4j Aura, Gemini, and A2A config
+- [x] Add a basic `.env.example`
+- [x] Add package management and task runner commands
+- [x] Add linting and formatting
+- [x] Add a simple local start command for each service
+- [x] Add README sections for local setup and project structure
 
 Exit criteria:
 
-- [ ] A new contributor can clone the repo, install dependencies, and boot the project locally
+- [x] A new contributor can clone the repo, install dependencies, and boot the project locally
 
 ## Phase 2: Shared Contracts And A2A Design
 
-- [ ] Define the Agent Card for the Context Agent
-- [ ] Define the Agent Card for the Local Agent Client
-- [ ] Define the A2A task payload schema
-- [ ] Define the A2A status update schema
-- [ ] Define the result payload schema
-- [ ] Define the error payload schema
-- [ ] Define how approvals and risk level are represented in the contract
-- [ ] Define trace IDs and run IDs for observability
+- [x] Define the Agent Card for the Context Agent
+- [x] Define the Agent Card for the Local Agent Client
+- [x] Define the A2A task payload schema
+- [x] Define the A2A status update schema
+- [x] Define the result payload schema
+- [x] Define the error payload schema
+- [x] Define how approvals and risk level are represented in the contract
+- [x] Define trace IDs and run IDs for observability
 
 Exit criteria:
 
-- [ ] The Context Agent and Local Agent Client can exchange a well-defined task contract
-- [ ] Contracts are documented and versioned in the repo
+- [x] The Context Agent and Local Agent Client can exchange a well-defined task contract
+- [x] Contracts are documented and versioned in the repo
 
 ## Phase 3: Cloud Infrastructure Bootstrap
 
-- [ ] Create the Supabase project
-- [ ] Create the Qdrant Cloud cluster
-- [ ] Create the Neo4j Aura instance
-- [ ] Store connection details and secrets securely
-- [ ] Create development and demo environments
-- [ ] Validate network connectivity from the app to all managed services
+- [x] Create the Supabase project
+- [x] Create the Qdrant Cloud cluster
+- [x] Create the Neo4j Aura instance
+- [x] Store connection details and secrets securely
+- [x] Create development and demo environments
+- [x] Validate network connectivity from the app to all managed services
+- [ ] Resolve Neo4j Aura connectivity (instance may be paused)
 
 Exit criteria:
 
-- [ ] All managed services are reachable from the running app
-- [ ] Base credentials and environment configuration are stable
+- [x] All managed services are reachable from the running app (Neo4j pending resume)
+- [x] Base credentials and environment configuration are stable
 
 ## Phase 4: Data Model And Persistence
 

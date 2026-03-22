@@ -72,14 +72,53 @@ ContextSuite is A2A-first.
 
 A2A is the protocol between the Context Agent and the Local Agent Client. MCP is optional and internal to the Context Agent when extra tools are needed. It is not the main transport for coding-agent execution.
 
-## Current Repository Focus
+## Project Structure
 
-This repository is currently focused on planning and MVP architecture for the hackathon.
+```
+packages/
+  shared/              Shared A2A contracts, agent cards, and types (Pydantic)
+  context-agent/       Context Agent — LangGraph workflow, retrieval, persistence
+  cli-agent/           CLI Agent — local client that runs coding assistant CLIs
+docs/
+  architecture.md      Full folder layout and package descriptions
+  plan.md              MVP execution checklist
+```
 
-Main documents:
+See [`docs/architecture.md`](docs/architecture.md) for the complete folder tree.
 
-- `docs/plan/CONTEXTSUITE_EXTENDED_PLAN.md`
-- `docs/plan/CONTEXTSUITE_MVP_IMPLEMENTATION_ARCHITECTURE.md`
+## Prerequisites
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) (package manager)
+
+## Local Setup
+
+```bash
+# Clone and enter the repo
+git clone <repo-url> && cd heilbronn-hackathon
+
+# Copy env template and fill in your values
+cp .env.example .env
+
+# Install all dependencies
+uv sync --all-packages
+
+# Start the Context Agent (port 8000)
+uv run context-agent
+
+# Start the CLI Agent (port 8001) — in a second terminal
+uv run cli-agent
+```
+
+## Available Commands
+
+| Command | Description |
+|---|---|
+| `uv run context-agent` | Start the Context Agent server |
+| `uv run cli-agent` | Start the CLI Agent server |
+| `uv run ruff check packages/` | Lint all packages |
+| `uv run ruff format packages/` | Format all packages |
+| `uv run pytest` | Run tests |
 
 ## Near-Term Outcome
 

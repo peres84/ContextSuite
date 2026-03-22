@@ -24,7 +24,7 @@ Do not change these unless the user explicitly asks:
 - **Cloud stack**: Supabase (relational), Qdrant Cloud (vector), Neo4j Aura (graph)
 - **Embeddings**: Gemini Embedding 2 multimodal
 - **Orchestration**: LangGraph
-- **Language**: prefer TypeScript for new application code
+- **Language**: Python for backend and agent code
 
 ## Build Priorities
 
@@ -40,9 +40,16 @@ Do not change these unless the user explicitly asks:
 
 Supabase MCP is connected for database operations. Use `docs-langchain` MCP for LangChain/LangGraph docs and `google-docs` MCP for Gemini API guidance.
 
+## Ignored Directories
+
+- `frontend/` — legacy demo app, not used for the MVP. Do not modify or reference it.
+
+## Project Structure
+
+- `docs/architecture.md` — defines the folder architecture and package layout for the project. Read this before creating new files or directories.
+
 ## Conventions
 
-- Use `@/` path aliases in frontend code
 - Keep A2A payloads and execution states as explicit typed contracts
 - Update checkboxes in `docs/plan.md` when completing tasks
 - Add discovered subtasks to `docs/plan.md` in the correct phase

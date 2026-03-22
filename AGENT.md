@@ -86,7 +86,7 @@ For the first vertical slice, prefer one working adapter over partial support fo
 - `frontend/`: existing Next.js frontend app
 - `media/`: branding assets and favicons
 
-## Frontend Notes
+## Frontend Notes (Demo should wait for user request, should be ignored)
 
 There is already a frontend app in `frontend/` built with Next.js and React.
 
@@ -114,18 +114,19 @@ If you change frontend code, use the `frontend/` app rather than creating a seco
 
 ## Code Style And Conventions
 
-- Prefer TypeScript for new application code in this repo
+- Use Python for all backend and agent code
+- Use Pydantic models for all data contracts and A2A schemas
+- Use Ruff for linting and formatting
 - Preserve the local style of the file you edit
-- Existing frontend code generally uses small React components and path aliases like `@/`
 - Keep modules focused and composable
 - Prefer explicit contracts for A2A payloads and execution states
 - Keep demo copy and UX simple and easy to follow
+- `frontend/` is a legacy demo app — do not modify it
 
 ## Testing And Validation
 
-- Run `pnpm lint` in `frontend/` after meaningful frontend changes
-- Run `pnpm build` in `frontend/` for substantial frontend changes
-- For new backend or local-client logic, add tests or validation where practical
+- Run `uv run ruff check .` for linting
+- Run `uv run pytest` for tests
 - For contract-heavy code, add schema validation tests early
 - Do not claim tests passed unless you actually ran them
 

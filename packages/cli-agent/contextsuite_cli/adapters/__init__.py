@@ -1,0 +1,1 @@
+"""Coding assistant CLI adapters."""
