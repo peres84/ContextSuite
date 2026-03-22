@@ -172,18 +172,23 @@ Exit criteria:
 
 ## Phase 10: API, UI, Or Demo Surface
 
-- [ ] Decide the main MVP entry point: minimal web UI or CLI
-- [ ] Build a prompt submission screen or command
-- [ ] Show retrieved context summary
-- [ ] Show generated or reviewed plan
-- [ ] Show approval status
-- [ ] Show which coding assistant was selected
-- [ ] Show execution progress and final result
-- [ ] Show memory saved after completion
+- [x] Decide the main MVP entry point: minimal web UI or CLI → CLI chosen
+- [x] Build a prompt submission screen or command
+- [x] Show retrieved context summary
+- [x] Show generated or reviewed plan
+- [x] Show approval status
+- [x] Show which coding assistant was selected
+- [x] Show execution progress and final result
+- [ ] Show memory saved after completion (deferred — memory persistence not yet wired)
+- [x] Interactive terminal chat with prompt history
+- [x] File references via `@file.py` tags
+- [x] Image attachments via `#image:path.png` or `/image path.png`
+- [x] Assistant selection via `/assistant codex|claude|cursor`
+- [x] Project initialization via `contextsuite init`
 
 Exit criteria:
 
-- [ ] A judge or user can understand the value of the product without reading internal docs
+- [x] A judge or user can understand the value of the product without reading internal docs
 
 ## Phase 11: Demo Data And Storytelling
 

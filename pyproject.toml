@@ -3,17 +3,21 @@ name = "contextsuite"
 version = "0.1.0"
 description = "Context, governance, and memory layer for AI coding workflows"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "contextsuite-app",
+]
 
 [tool.uv.workspace]
 members = [
   "packages/shared",
   "packages/context-agent",
   "packages/cli-agent",
+  "packages/cli-app",
 ]
 
 [tool.uv.sources]
 contextsuite-shared = { workspace = true }
+contextsuite-app = { workspace = true }
 
 [tool.ruff]
 target-version = "py312"

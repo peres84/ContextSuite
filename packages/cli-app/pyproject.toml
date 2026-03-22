@@ -1,0 +1,25 @@
+[project]
+name = "contextsuite-app"
+version = "0.1.0"
+description = "ContextSuite CLI — interactive terminal for AI coding workflows"
+requires-python = ">=3.12"
+dependencies = [
+  "contextsuite-shared",
+  "httpx>=0.28,<1",
+  "rich>=14,<15",
+  "click>=8,<9",
+  "prompt-toolkit>=3.0,<4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["contextsuite_app"]
+
+[project.scripts]
+contextsuite = "contextsuite_app.cli:main"
+
+[tool.uv.sources]
+contextsuite-shared = { workspace = true }

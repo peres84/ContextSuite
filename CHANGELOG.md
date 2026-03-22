@@ -106,6 +106,19 @@ All notable changes to ContextSuite are documented in this file.
 - Approval decisions persisted in Supabase with reviewer, risk, reason, and violations
 - Human approval checkpoint deferred for MVP (auto-approve medium, reject high)
 
+### Phase 10: CLI Demo Surface
+
+- Built `contextsuite` CLI app (`packages/cli-app`) with Click + Rich + prompt-toolkit
+- Interactive terminal chat with prompt history (`.contextsuite/history.txt`)
+- `contextsuite init` — initialize project folder with `.contextsuite.json` config
+- `contextsuite chat` — interactive mode or one-shot prompt via arguments
+- `contextsuite status` — show current project configuration
+- File references via `@file.py` tags — attaches file content to the prompt
+- Image attachments via `#image:path.png` or `/image path.png` commands
+- Assistant selection via `/assistant codex|claude|cursor` during session
+- Rich output: colored risk levels, approval status, plan panels, execution results
+- Sends prompts to Context Agent `POST /tasks/send` with full attachment support
+
 ### Full A2A E2E Verified
 
 - Context Agent → CLI Agent round-trip working over HTTP
