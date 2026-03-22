@@ -35,16 +35,11 @@ load_dotenv()
 uri = os.getenv("NEO4J_URI", "")
 user = os.getenv("NEO4J_USERNAME", "") or os.getenv("NEO4J_USER", "neo4j")
 password = os.getenv("NEO4J_PASSWORD", "")
+database = os.getenv("NEO4J_DATABASE", "") or None
 
 if not uri or not password:
     print("[SKIP] NEO4J_URI or NEO4J_PASSWORD not set")
     sys.exit(0)
-
-if uri.startswith("neo4j+s://"):
-    uri = uri.replace("neo4j+s://", "bolt+s://")
-
-# Unset NEO4J_DATABASE — Aura routing doesn't support it, uses home db
-os.environ.pop("NEO4J_DATABASE", None)
 
 from neo4j import GraphDatabase
 
@@ -67,16 +62,17 @@ INDEXES = [
 
 def main():
     print(f"Connecting to Neo4j: {uri}")
+    print(f"  Database: {database or '(home)'}")
     try:
         driver = GraphDatabase.driver(uri, auth=(user, password))
-        with driver.session() as session:
+        with driver.session(database=database) as session:
             session.run("RETURN 1")
         print("  [OK] Connected")
     except Exception as e:
         print(f"  [FAIL] {e}")
         sys.exit(1)
 
-    with driver.session() as session:
+    with driver.session(database=database) as session:
         print("  Creating constraints...")
         for stmt in CONSTRAINTS:
             session.run(stmt)

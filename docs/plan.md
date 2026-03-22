@@ -71,7 +71,7 @@ Exit criteria:
 - [x] Store connection details and secrets securely
 - [x] Create development and demo environments
 - [x] Validate network connectivity from the app to all managed services
-- [ ] Resolve Neo4j Aura connectivity (instance may be paused)
+- [x] Resolve Neo4j Aura connectivity (fixed: use neo4j+s:// with explicit database name)
 
 Exit criteria:
 
@@ -100,7 +100,7 @@ Exit criteria:
 - [x] Implement document chunking for text and multimodal-compatible content metadata
 - [x] Generate embeddings with Gemini Embedding 2 multimodal
 - [x] Store semantic vectors in Qdrant Cloud
-- [ ] Store structural relationships in Neo4j Aura (blocked by Neo4j Aura issue)
+- [x] Store structural relationships in Neo4j Aura
 - [x] Store ingestion metadata and source tracking in Supabase
 - [x] Add retrieval logic for similar incidents, constraints, and related artifacts
 - [x] Add a simple ranking strategy across vector and graph results
