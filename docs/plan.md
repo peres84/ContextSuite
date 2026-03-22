@@ -95,37 +95,37 @@ Exit criteria:
 
 ## Phase 5: Context Ingestion And Retrieval
 
-- [ ] Define the input sources for MVP context ingestion
-- [ ] Start with a simple ingestion set: issues, docs, ADRs, and selected code summaries
-- [ ] Implement document chunking for text and multimodal-compatible content metadata
-- [ ] Generate embeddings with Gemini Embedding 2 multimodal
-- [ ] Store semantic vectors in Qdrant Cloud
-- [ ] Store structural relationships in Neo4j Aura
-- [ ] Store ingestion metadata and source tracking in Supabase
-- [ ] Add retrieval logic for similar incidents, constraints, and related artifacts
-- [ ] Add a simple ranking strategy across vector and graph results
+- [x] Define the input sources for MVP context ingestion
+- [x] Start with a simple ingestion set: issues, docs, ADRs, and selected code summaries
+- [x] Implement document chunking for text and multimodal-compatible content metadata
+- [x] Generate embeddings with Gemini Embedding 2 multimodal
+- [x] Store semantic vectors in Qdrant Cloud
+- [ ] Store structural relationships in Neo4j Aura (blocked by Neo4j Aura issue)
+- [x] Store ingestion metadata and source tracking in Supabase
+- [x] Add retrieval logic for similar incidents, constraints, and related artifacts
+- [x] Add a simple ranking strategy across vector and graph results
 
 Exit criteria:
 
-- [ ] The Context Agent can retrieve useful context for a prompt
-- [ ] Retrieval results can be shown clearly in the demo
+- [x] The Context Agent can retrieve useful context for a prompt
+- [x] Retrieval results can be shown clearly in the demo
 
 ## Phase 6: Context Agent Core Workflow
 
-- [ ] Implement prompt intake
-- [ ] Implement context retrieval before planning
-- [ ] Implement a task normalization step
-- [ ] Implement plan generation or plan review
-- [ ] Implement risk classification for low, medium, and high risk
-- [ ] Implement a policy check step
-- [ ] Implement approval routing logic
-- [ ] Implement final packaging of the approved task for A2A delivery
-- [ ] Add structured logs for each workflow step
+- [x] Implement prompt intake
+- [x] Implement context retrieval before planning
+- [x] Implement a task normalization step
+- [x] Implement plan generation or plan review
+- [x] Implement risk classification for low, medium, and high risk
+- [x] Implement a policy check step
+- [x] Implement approval routing logic
+- [x] Implement final packaging of the approved task for A2A delivery
+- [x] Add structured logs for each workflow step
 
 Exit criteria:
 
-- [ ] A prompt can move from intake to reviewed, approved task creation
-- [ ] Every step is visible in logs or a debug view
+- [x] A prompt can move from intake to reviewed, approved task creation
+- [x] Every step is visible in logs or a debug view
 
 ## Phase 7: Local Agent Client
 

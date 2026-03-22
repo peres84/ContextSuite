@@ -1,1 +1,1 @@
-"""Workflow nodes for the Context Agent."""
+"""Workflow node functions for the Context Agent LangGraph pipeline."""

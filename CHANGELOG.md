@@ -52,3 +52,31 @@ All notable changes to ContextSuite are documented in this file.
 - Seeded demo data: 1 repository + 5 context documents (incidents, ADRs, constraints) embedded in Qdrant
 - Verified semantic search: "webhook crashes with null email" → 0.80 similarity to correct incident
 - Documented all schemas in `docs/schemas/` (supabase.md, qdrant.md, neo4j.md) for recovery
+
+### Phase 5: Context Ingestion And Retrieval
+
+- Defined input source types: `incident`, `adr`, `constraint`, `doc`, `code_summary`, `issue`
+- Implemented document chunker with paragraph/sentence boundary splitting and configurable overlap
+- Built ingestion pipeline: chunk → embed (Gemini 2) → store in Qdrant → track in Supabase
+- Added `documents` table in Supabase for ingestion metadata tracking (source_type, vector_id, chunks)
+- Added `DocumentsRepo` for querying ingested documents by repository, source type, or vector ID
+- Built `retrieve_context()` high-level function combining vector search + graph queries + ranking
+- Created `scripts/ingest_demo.py` — ingests 6 demo documents through the full pipeline
+- Verified end-to-end: "webhook crashes when customer email is null" → 0.81 similarity to correct incident
+- Added 9 unit tests for chunker and document sources (34 total tests passing)
+- Neo4j graph seeding still blocked by Aura provisioning issue (see KNOWN_ISSUES.md)
+
+### Phase 6: Context Agent Core Workflow
+
+- Built LangGraph workflow: intake → retrieve → plan → classify → approve → package
+- Implemented prompt intake node: creates run, persists prompt, resolves repository
+- Implemented context retrieval node: embeds prompt, searches Qdrant, saves context snapshot
+- Implemented plan generation node: Gemini 2.5 Flash generates task plans from prompt + context
+- Implemented risk classification node: regex-based signal detection with weighted scoring
+- Implemented approval routing: auto-approve low/medium risk, reject high risk, policy blocklist
+- Implemented task packaging node: builds A2A `TaskPayload` for dispatch to CLI Agent
+- Added `POST /tasks/send` endpoint to the Context Agent server
+- Added structured logging across all workflow nodes
+- Verified end-to-end: low-risk prompt → auto-approved with plan and task_id
+- Verified end-to-end: high-risk prompt → 3 signals detected, rejected with reason
+- Added 8 risk classification unit tests (42 total tests passing)

@@ -1,6 +1,8 @@
 """Graph state definition for the Context Agent workflow."""
 
-from typing import TypedDict
+from __future__ import annotations
+
+from typing import Any, TypedDict
 
 from contextsuite_shared.types import ApprovalDecision, RiskAssessment
 
@@ -16,6 +18,7 @@ class AgentState(TypedDict, total=False):
     # Run tracking
     run_id: str
     trace_id: str
+    repository_id: str | None
 
     # Workflow outputs
     context_summary: str | None
@@ -25,4 +28,5 @@ class AgentState(TypedDict, total=False):
 
     # Dispatch
     task_id: str | None
+    payload: Any  # TaskPayload when ready
     dispatch_status: str | None

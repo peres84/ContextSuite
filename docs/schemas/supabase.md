@@ -100,6 +100,23 @@ create type approval_decision as enum ('approved', 'rejected', 'escalated');
 | error_message | text | yes | |
 | created_at | timestamptz | no | now() |
 
+### documents
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| id | uuid | no | gen_random_uuid() |
+| repository_id | uuid (FK → repositories) | yes | |
+| source_type | text | no | |
+| source_path | text | yes | |
+| title | text | yes | |
+| content | text | no | |
+| chunk_index | int | no | 0 |
+| chunk_total | int | no | 1 |
+| vector_id | text | yes | |
+| metadata | jsonb | no | '{}' |
+| created_at | timestamptz | no | now() |
+| updated_at | timestamptz | no | now() |
+
 ## Indexes
 
 - `idx_runs_repository` on runs(repository_id)
@@ -110,11 +127,15 @@ create type approval_decision as enum ('approved', 'rejected', 'escalated');
 - `idx_approvals_run` on approvals(run_id)
 - `idx_outcomes_run` on outcomes(run_id)
 - `idx_context_snapshots_run` on context_snapshots(run_id)
+- `idx_documents_repository` on documents(repository_id)
+- `idx_documents_source_type` on documents(source_type)
+- `idx_documents_vector_id` on documents(vector_id)
 
 ## Triggers
 
 - `trg_runs_updated` — auto-updates `updated_at` on runs
 - `trg_repositories_updated` — auto-updates `updated_at` on repositories
+- `trg_documents_updated` — auto-updates `updated_at` on documents
 
 ## Recovery
 
