@@ -154,7 +154,7 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.92fr);
   gap: 32px;
-  padding: 36px;
+  padding: 6px;
   border: 1px solid var(--line);
   border-radius: 36px;
   background:
@@ -217,7 +217,7 @@ h1 {
 .primary-button,
 .secondary-button {
   border-radius: 999px;
-  padding: 15px 22px;
+  padding: 15px 122px;
   border: 1px solid transparent;
   cursor: pointer;
   font-weight: 700;
