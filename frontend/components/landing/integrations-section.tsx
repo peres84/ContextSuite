@@ -10,7 +10,7 @@ const integrations = [
 export function IntegrationsSection() {
   return (
     <section className="py-16">
-      <div className="container mx-auto px-4">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="text-center">
           <p className="text-lg text-muted-foreground">
             Works with your current dev workflow

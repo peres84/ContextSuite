@@ -3,7 +3,7 @@ import { ArrowRight, TrendingDown, Clock, FileText } from "lucide-react"
 export function ProblemOutcomeSection() {
   return (
     <section className="border-y border-border bg-muted/30 py-16">
-      <div className="container mx-auto px-4">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid items-center gap-8 md:grid-cols-3">
           {/* Problem */}
           <div className="text-center md:text-left">

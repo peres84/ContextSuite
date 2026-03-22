@@ -6,7 +6,7 @@ import { ArrowRight, Play, Shield, AlertTriangle, CheckCircle2, GitBranch } from
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden py-20 md:py-32">
-      <div className="container mx-auto px-4">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           {/* Left Content */}
           <div className="flex flex-col gap-6">

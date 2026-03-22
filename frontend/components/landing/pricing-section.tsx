@@ -61,7 +61,7 @@ const addons = [
 export function PricingSection() {
   return (
     <section id="pricing" className="border-y border-border bg-muted/30 py-20 md:py-32">
-      <div className="container mx-auto px-4">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Simple, transparent pricing

@@ -26,7 +26,7 @@ const trustCards = [
 export function TrustSection() {
   return (
     <section id="security" className="py-20 md:py-32">
-      <div className="container mx-auto px-4">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
