@@ -2,7 +2,7 @@
 
 ## A2A Protocol Compatibility
 
-**Status:** Partially Resolved  
+**Status:** Partially Resolved
 **Date:** 2026-03-22
 
 ### Current state
@@ -55,29 +55,43 @@ The Neo4j Aura free-tier database is named after the instance ID (for example `5
 - Demo data seeded: 22 nodes and 35 relationships
 - Graph retrieval functions verified working
 
-## Local Agent Execution Depends On Installed Assistant CLI
+## Local Agent Execution Depends On Installed Assistant CLI And Clean Agent Ports
 
-**Status:** Open  
+**Status:** Partially Resolved
 **Date:** 2026-03-22
 
 ### Current state
 
-The new green-brand demo was verified end to end through ingestion, retrieval, risk classification, and approval routing.
+The green-brand demo is now verified end to end on a clean runtime path.
 
-The red-theme request works as intended because it stops before execution and is escalated for human approval.
+The remaining operational risk is no longer the adapter code itself. The main failure mode is starting a new agent while an older listener is still bound to the same port.
 
-The safe prompt path can still fail at the local execution stage if the selected coding assistant CLI is not installed correctly or the local CLI Agent cannot execute it.
+### Implemented fix
+
+- CLI-agent subprocess execution was moved to a Windows-safe worker-thread subprocess path
+- The Codex adapter now uses the current `codex exec` command shape
+- Packaged `context-agent` and `cli-agent` entrypoints now default to `reload = false`
+
+### Remaining caveat
+
+- If port `8001` is already occupied by an older CLI-agent process, `uv run cli-agent` can fail to bind and your requests will still hit the stale process
+- In that situation, the demo can still look broken even though the new code is correct
+- The selected coding assistant CLI must still be installed and callable from `PATH`
 
 ### Practical impact
 
-- The guardrail story is fully demoable without local execution because the violating prompt pauses before dispatch
-- The full safe-execution path still depends on the local machine having a working assistant CLI such as `codex`, `claude`, or `cursor`
-- If the assistant CLI is missing or misconfigured, retrieval and approval may still succeed while execution returns `failed`
+- The guardrail story remains fully demoable because the violating prompt escalates before execution
+- The full approval-resume execution path works when the agent ports are clean and the assistant CLI is available
+- If an old process still owns `8001`, the default local demo commands can hit stale behavior and appear to ignore recent fixes
 
 ### Workaround
 
-- For the main live demo, use the red-theme prompt to show retrieval plus approval gating
-- For full execution demos, verify the assistant CLI locally before presenting:
+- Kill any older CLI-agent listener before starting a new one, or run both agents on a clean alternate port
+- For alternate-port runs, set `CLI_AGENT_PORT` for both services before starting them
+- Verify the assistant CLI locally before presenting:
   - `codex --help`
   - `claude --help`
   - `cursor --help`
+- If port `8001` is suspicious, use:
+  - Terminal 1: `$env:CLI_AGENT_PORT='8012'; uv run cli-agent`
+  - Terminal 2: `$env:CLI_AGENT_PORT='8012'; uv run context-agent`

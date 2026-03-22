@@ -246,7 +246,7 @@ def main():
         "contextsuite_cli.server:app",
         host=settings.cli_agent_host,
         port=settings.cli_agent_port,
-        reload=True,
+        reload=settings.cli_agent_reload,
     )
 
 

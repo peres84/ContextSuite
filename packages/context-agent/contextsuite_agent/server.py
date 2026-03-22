@@ -304,7 +304,7 @@ def main():
         "contextsuite_agent.server:app",
         host=settings.context_agent_host,
         port=settings.context_agent_port,
-        reload=True,
+        reload=settings.context_agent_reload,
     )
 
 

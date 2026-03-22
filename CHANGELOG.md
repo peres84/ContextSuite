@@ -207,3 +207,19 @@ All notable changes to ContextSuite are documented in this file.
   - risk becomes `high`
   - approval becomes `escalated`
   - execution is paused before dispatch
+
+### Phase 14: Windows CLI Runtime Hardening And Demo Verification
+
+- Updated the CLI-agent adapters to use a Windows-safe subprocess path backed by worker threads instead of `asyncio.create_subprocess_exec(...)`
+- Updated the Codex adapter to the current `codex exec --full-auto --output-last-message ...` command shape
+- Added regression coverage for the Codex adapter command path and result parsing
+- Changed both packaged agent entrypoints so `uv run context-agent` and `uv run cli-agent` default to `reload = false`
+- Verified the full approval-resume path on clean temporary ports:
+  - red-theme request -> escalated approval
+  - human approval -> CLI dispatch
+  - Codex completion returned to the Context Agent
+- Documented the operational caveat that a stale listener on port `8001` can shadow the new CLI Agent and make the demo appear broken
+- Captured a live demo-site refresh in:
+  - `demo/src/App.jsx`
+  - `demo/src/styles.css`
+  The refresh keeps the required green theme while tightening the hero, feature, and principles sections for the green-brand demo

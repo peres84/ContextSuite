@@ -1,10 +1,11 @@
-"""Codex CLI adapter — runs OpenAI Codex CLI as a subprocess."""
+"""Codex CLI adapter that runs the current Codex exec command."""
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
+import tempfile
+from pathlib import Path
 
 from contextsuite_shared.a2a import TaskPayload, TaskResult
 from contextsuite_shared.a2a.task import Artifact, TaskState
@@ -23,20 +24,22 @@ class CodexAdapter(BaseAdapter):
     async def execute(self, payload: TaskPayload) -> TaskResult:
         """Run a prompt through the Codex CLI."""
         workspace = payload.workspace_path or settings.default_workspace
-        workspace = os.path.expanduser(workspace)
+        workspace = self.prepare_workspace(workspace)
+        full_prompt = self.build_prompt(payload)
 
-        # Build the prompt with context
-        full_prompt = payload.prompt
-        if payload.plan:
-            full_prompt = f"{payload.prompt}\n\nPlan:\n{payload.plan}"
+        output_fd, output_path = tempfile.mkstemp(
+            prefix="contextsuite-codex-",
+            suffix=".txt",
+        )
+        os.close(output_fd)
 
-        # Build codex command
-        # codex --quiet --auto-edit --prompt "..."
         cmd = [
             "codex",
-            "--quiet",
-            "--auto-edit",
-            "--prompt",
+            "exec",
+            "--skip-git-repo-check",
+            "--full-auto",
+            "--output-last-message",
+            output_path,
             full_prompt,
         ]
 
@@ -47,16 +50,12 @@ class CodexAdapter(BaseAdapter):
         )
 
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=workspace,
-            )
-            stdout, stderr = await proc.communicate()
+            proc = await self.run_subprocess(cmd, workspace)
 
-            stdout_text = stdout.decode("utf-8", errors="replace")
-            stderr_text = stderr.decode("utf-8", errors="replace")
+            stdout_text = proc.stdout.decode("utf-8", errors="replace")
+            stderr_text = proc.stderr.decode("utf-8", errors="replace")
+            output_text = Path(output_path).read_text(encoding="utf-8").strip()
+            content = output_text or stderr_text or stdout_text
 
             if proc.returncode == 0:
                 logger.info("codex: completed successfully (run=%s)", payload.run_id)
@@ -64,40 +63,45 @@ class CodexAdapter(BaseAdapter):
                     task_id="",  # filled by lifecycle
                     state=TaskState.COMPLETED,
                     summary=f"Codex completed successfully in {workspace}",
-                    output=stdout_text,
+                    output=content,
                     artifacts=[
                         Artifact(
-                            name="stdout",
+                            name="codex-output",
                             parts=[],
-                            metadata={"content": stdout_text[:5000]},
-                        ),
-                    ],
-                )
-            else:
-                logger.warning(
-                    "codex: exited with code %d (run=%s)",
-                    proc.returncode,
-                    payload.run_id,
-                )
-                return TaskResult(
-                    task_id="",
-                    state=TaskState.FAILED,
-                    summary=f"Codex exited with code {proc.returncode}",
-                    output=stderr_text or stdout_text,
-                    artifacts=[
-                        Artifact(
-                            name="stderr",
-                            parts=[],
-                            metadata={"content": stderr_text[:5000]},
+                            metadata={"content": content[:5000]},
                         ),
                     ],
                 )
 
+            logger.warning(
+                "codex: exited with code %d (run=%s)",
+                proc.returncode,
+                payload.run_id,
+            )
+            return TaskResult(
+                task_id="",
+                state=TaskState.FAILED,
+                summary=f"Codex exited with code {proc.returncode}",
+                output=content,
+                artifacts=[
+                    Artifact(
+                        name="stderr",
+                        parts=[],
+                        metadata={"content": content[:5000]},
+                    ),
+                ],
+            )
+
         except FileNotFoundError:
-            logger.error("codex: CLI not found — is it installed?")
+            logger.error("codex: CLI not found - is it installed?")
             return TaskResult(
                 task_id="",
                 state=TaskState.FAILED,
                 summary="Codex CLI not found. Install with: npm install -g @openai/codex",
                 output="",
             )
+        finally:
+            try:
+                os.remove(output_path)
+            except FileNotFoundError:
+                pass

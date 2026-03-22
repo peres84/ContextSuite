@@ -154,8 +154,8 @@ Expected workflow behavior:
 
 Important note:
 
-- In my verification, the safe prompt reached dispatch, but the local execution step still failed.
-- That means the retrieval and approval flow is working, but your local assistant CLI or local agent execution may still need debugging.
+- The safe path is now verified on a clean runtime path.
+- If it still fails locally, the most common cause is a stale CLI-agent listener already holding port `8001`.
 
 ### 4. Run the blocked-by-constraint prompt
 
@@ -268,11 +268,45 @@ The demo ingest script now clears old demo chunks before re-ingesting. If needed
 
 ### Safe prompt fails during execution
 
-That is usually a local execution issue, not a retrieval issue. Check:
+That is usually a local runtime issue, not a retrieval issue. Check:
 
 - `uv run cli-agent` is running
+- port `8001` is not already occupied by an older CLI-agent process
 - your selected assistant CLI is installed
 - the assistant command is available on `PATH`
+
+If you suspect `8001` is stale, run both agents on a clean port:
+
+Terminal 1:
+
+```powershell
+$env:CLI_AGENT_PORT='8012'
+uv run cli-agent
+```
+
+Terminal 2:
+
+```powershell
+$env:CLI_AGENT_PORT='8012'
+uv run context-agent
+```
+
+Then rerun the same `contextsuite` command.
+
+### Red prompt is approved but still appears to ignore the new fix
+
+This usually means your shell started a new CLI Agent, but it could not bind to `8001` because an older listener was already running there.
+
+Symptoms:
+
+- `uv run cli-agent` exits quickly
+- `http://127.0.0.1:8001/health` still responds
+- the workflow still behaves like the older broken process
+
+Workaround:
+
+- free the old listener, or
+- use the clean-port flow above with `CLI_AGENT_PORT='8012'`
 
 ### The React site does not start
 
