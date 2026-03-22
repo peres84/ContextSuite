@@ -30,3 +30,4 @@ class AgentState(TypedDict, total=False):
     task_id: str | None
     payload: Any  # TaskPayload when ready
     dispatch_status: str | None
+    dispatch_result: dict | None

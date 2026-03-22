@@ -6,6 +6,7 @@ from langgraph.graph import END, StateGraph
 
 from contextsuite_agent.workflow.nodes.approve import approve
 from contextsuite_agent.workflow.nodes.classify import classify
+from contextsuite_agent.workflow.nodes.dispatch import dispatch
 from contextsuite_agent.workflow.nodes.intake import intake
 from contextsuite_agent.workflow.nodes.package import package
 from contextsuite_agent.workflow.nodes.plan import plan
@@ -24,7 +25,7 @@ def should_dispatch(state: AgentState) -> str:
 def build_graph() -> StateGraph:
     """Build and compile the Context Agent workflow graph.
 
-    Pipeline: intake → retrieve → plan → classify → approve → (package | end)
+    Pipeline: intake → retrieve → plan → classify → approve → (package → dispatch | end)
     """
     graph = StateGraph(AgentState)
 
@@ -35,6 +36,7 @@ def build_graph() -> StateGraph:
     graph.add_node("classify", classify)
     graph.add_node("approve", approve)
     graph.add_node("package", package)
+    graph.add_node("dispatch", dispatch)
 
     # Linear flow through the pipeline
     graph.set_entry_point("intake")
@@ -43,12 +45,13 @@ def build_graph() -> StateGraph:
     graph.add_edge("plan", "classify")
     graph.add_edge("classify", "approve")
 
-    # Conditional: approved → package, rejected → end
+    # Conditional: approved → package → dispatch, rejected → end
     graph.add_conditional_edges("approve", should_dispatch, {
         "package": "package",
         "end": END,
     })
-    graph.add_edge("package", END)
+    graph.add_edge("package", "dispatch")
+    graph.add_edge("dispatch", END)
 
     return graph.compile()
 

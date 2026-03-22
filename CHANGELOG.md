@@ -80,3 +80,34 @@ All notable changes to ContextSuite are documented in this file.
 - Verified end-to-end: low-risk prompt → auto-approved with plan and task_id
 - Verified end-to-end: high-risk prompt → 3 signals detected, rejected with reason
 - Added 8 risk classification unit tests (42 total tests passing)
+
+### Phase 7: Local Agent Client
+
+- Built `POST /tasks/receive` endpoint on the CLI Agent for A2A task receipt
+- Implemented adapter registry with auto-registration of all adapters on import
+- Implemented task execution lifecycle with timeout (300s) and error handling
+- Health endpoint now reports registered adapters
+- Added A2A dispatch node to Context Agent workflow (package → dispatch → END)
+- Context Agent now calls CLI Agent over HTTP and persists outcome in Supabase
+
+### Phase 8: Coding Assistant Adapters
+
+- Implemented Codex CLI adapter (`codex --quiet --auto-edit --prompt`)
+- Implemented Claude Code CLI adapter (`claude --print --dangerously-skip-permissions --prompt`)
+- Implemented Cursor CLI adapter (`cursor --prompt`)
+- All adapters: subprocess execution, stdout/stderr capture, artifact collection
+- All adapters return `TaskResult` (completed/failed) with normalized output
+- Missing CLI tools are reported as `TaskResult(state=failed)` with install instructions
+
+### Phase 9: Approval And Safety Layer (partial)
+
+- Risk classification and approval routing were built in Phase 6
+- Policy blocklist: `drop database`, `rm -rf /`, `delete all users`, `disable authentication`
+- Approval decisions persisted in Supabase with reviewer, risk, reason, and violations
+- Human approval checkpoint deferred for MVP (auto-approve medium, reject high)
+
+### Full A2A E2E Verified
+
+- Context Agent → CLI Agent round-trip working over HTTP
+- Low-risk prompt: approved → dispatched → codex adapter executed → result returned
+- Outcome (success/failure) persisted in Supabase `outcomes` table

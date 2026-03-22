@@ -129,46 +129,46 @@ Exit criteria:
 
 ## Phase 7: Local Agent Client
 
-- [ ] Create the installable ContextSuite Local Agent Client
-- [ ] Implement local configuration for assistant selection
-- [ ] Implement workspace selection and repository targeting
-- [ ] Implement A2A task receipt
-- [ ] Implement task execution lifecycle states
-- [ ] Implement output streaming back to the Context Agent
-- [ ] Implement artifact capture for logs, plan, summary, and patch references
-- [ ] Add timeout, cancellation, and retry behavior
+- [x] Create the installable ContextSuite Local Agent Client
+- [x] Implement local configuration for assistant selection
+- [x] Implement workspace selection and repository targeting
+- [x] Implement A2A task receipt
+- [x] Implement task execution lifecycle states
+- [ ] Implement output streaming back to the Context Agent (deferred — sync for MVP)
+- [x] Implement artifact capture for logs, plan, summary, and patch references
+- [x] Add timeout, cancellation, and retry behavior
 
 Exit criteria:
 
-- [ ] The Local Agent Client can receive an A2A task and return structured progress updates
+- [x] The Local Agent Client can receive an A2A task and return structured progress updates
 
 ## Phase 8: Coding Assistant Adapters
 
-- [ ] Implement the Codex CLI adapter
-- [ ] Implement the Claude Code CLI adapter
-- [ ] Implement the Cursor CLI adapter
-- [ ] Normalize prompts before passing them to each adapter
-- [ ] Normalize results into one common output contract
-- [ ] Capture failures and stderr safely
-- [ ] Mark unsupported capabilities explicitly instead of hiding them
+- [x] Implement the Codex CLI adapter
+- [x] Implement the Claude Code CLI adapter
+- [x] Implement the Cursor CLI adapter
+- [x] Normalize prompts before passing them to each adapter
+- [x] Normalize results into one common output contract
+- [x] Capture failures and stderr safely
+- [x] Mark unsupported capabilities explicitly instead of hiding them
 
 Exit criteria:
 
-- [ ] At least one adapter works end to end
-- [ ] The other adapters have a clear integration path, even if partial
+- [x] At least one adapter works end to end
+- [x] The other adapters have a clear integration path, even if partial
 
 ## Phase 9: Approval And Safety Layer
 
-- [ ] Define low-risk tasks eligible for auto-approval
-- [ ] Define medium-risk and high-risk triggers
-- [ ] Add a human approval checkpoint for risky actions
-- [ ] Add policy rules for forbidden or sensitive actions
-- [ ] Add audit logging for approval decisions
-- [ ] Add reason codes for blocked tasks
+- [x] Define low-risk tasks eligible for auto-approval
+- [x] Define medium-risk and high-risk triggers
+- [ ] Add a human approval checkpoint for risky actions (deferred — MVP uses auto-approval)
+- [x] Add policy rules for forbidden or sensitive actions
+- [x] Add audit logging for approval decisions
+- [x] Add reason codes for blocked tasks
 
 Exit criteria:
 
-- [ ] The demo can show both an approved flow and a blocked or escalated flow
+- [x] The demo can show both an approved flow and a blocked or escalated flow
 
 ## Phase 10: API, UI, Or Demo Surface
 

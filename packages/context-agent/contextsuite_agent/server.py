@@ -77,6 +77,7 @@ async def send_task(request: TaskRequest):
             "reviewer": approval.reviewer if approval else "",
         },
         "task_id": result.get("task_id"),
+        "execution": result.get("dispatch_result"),
     }
 
 
