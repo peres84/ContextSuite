@@ -147,6 +147,24 @@ Both `context-agent` and `cli-agent` depend on `shared`. They do not depend on e
 - **pytest** — testing
 - **Python 3.12+**
 
+## Data Ownership Rules
+
+Each data store has a clear role. Data is authoritative in one store and derived in the others.
+
+| Data | Authoritative Store | Derived In | Notes |
+|---|---|---|---|
+| Runs, prompts, plans, approvals, outcomes | **Supabase** | — | System of record for all transactional data |
+| Repositories (metadata) | **Supabase** | Neo4j (as nodes) | Supabase owns the record; Neo4j stores relationships |
+| Semantic embeddings (docs, issues, code) | **Qdrant** | — | Vectors generated from source content via Gemini |
+| Structural relationships (files, entities, issues) | **Neo4j** | — | Graph-native queries for connected context |
+| Ingestion metadata (what was indexed, when) | **Supabase** | — | Tracks what has been pushed to Qdrant/Neo4j |
+
+**Write rules:**
+- All run lifecycle writes go to Supabase first
+- Embeddings are written to Qdrant during ingestion, read during retrieval
+- Graph nodes/edges are written to Neo4j during ingestion, read during retrieval
+- If Qdrant or Neo4j data is lost, it can be re-derived from source + Supabase metadata
+
 ## Naming Conventions
 
 - Package import names use underscores: `contextsuite_shared`, `contextsuite_agent`, `contextsuite_cli`

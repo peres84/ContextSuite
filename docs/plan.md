@@ -80,18 +80,18 @@ Exit criteria:
 
 ## Phase 4: Data Model And Persistence
 
-- [ ] Design the Supabase schema for users, repositories, runs, approvals, prompts, plans, and outcomes
-- [ ] Design the Qdrant collections for semantic retrieval
-- [ ] Design the Neo4j graph model for issues, files, entities, tasks, and relationships
-- [ ] Decide which data is authoritative in Supabase versus derived in Qdrant and Neo4j
-- [ ] Add migrations for the Supabase schema
-- [ ] Add repository-layer code for all core reads and writes
-- [ ] Add seed data for demo development
+- [x] Design the Supabase schema for users, repositories, runs, approvals, prompts, plans, and outcomes
+- [x] Design the Qdrant collections for semantic retrieval
+- [x] Design the Neo4j graph model for issues, files, entities, tasks, and relationships
+- [x] Decide which data is authoritative in Supabase versus derived in Qdrant and Neo4j
+- [x] Add migrations for the Supabase schema
+- [x] Add repository-layer code for all core reads and writes
+- [x] Add seed data for demo development
 
 Exit criteria:
 
-- [ ] A full run can be persisted end to end
-- [ ] The project has clear ownership rules for each data store
+- [x] A full run can be persisted end to end
+- [x] The project has clear ownership rules for each data store
 
 ## Phase 5: Context Ingestion And Retrieval
 

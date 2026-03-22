@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from contextsuite_shared.a2a import (
     Artifact,
     DataPart,
@@ -32,7 +31,6 @@ from contextsuite_shared.types import (
     RiskSignal,
     RunMeta,
 )
-
 
 # --- A2A Task lifecycle ---
 

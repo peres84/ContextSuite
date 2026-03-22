@@ -36,6 +36,19 @@ All notable changes to ContextSuite are documented in this file.
 - Validated Supabase connectivity (connected, no tables yet)
 - Validated Qdrant Cloud connectivity (connected, no collections yet)
 - Validated Gemini Embedding 2 multimodal (3072-dim vectors working)
-- Neo4j Aura instance created (connectivity pending instance resume)
+- Neo4j Aura instance created — connects via `bolt+s://` but has database provisioning issue (see KNOWN_ISSUES.md)
 - Created `scripts/` directory with connectivity test scripts for all services
 - Created `scripts/test_all.py` runner to test everything at once
+
+### Phase 4: Data Model And Persistence
+
+- Designed and applied Supabase migration: 7 tables (`repositories`, `runs`, `prompts`, `plans`, `context_snapshots`, `approvals`, `outcomes`), 3 enums, indexes, auto-update triggers
+- Created Qdrant `contextsuite` collection (3072-dim, cosine similarity) for Gemini Embedding 2
+- Designed Neo4j graph model: 6 node labels, 10 relationship types, uniqueness constraints, indexes
+- Documented data ownership rules in `docs/architecture.md` (Supabase authoritative, Qdrant/Neo4j derived)
+- Implemented persistence layer: `RunsRepo`, `PromptsRepo`, `ApprovalsRepo` with full CRUD
+- Implemented retrieval layer: Qdrant vector search, Neo4j graph queries, cross-source ranking
+- Implemented Gemini Embedding 2 client: `embed_text()` / `embed_texts()`
+- Seeded demo data: 1 repository + 5 context documents (incidents, ADRs, constraints) embedded in Qdrant
+- Verified semantic search: "webhook crashes with null email" → 0.80 similarity to correct incident
+- Documented all schemas in `docs/schemas/` (supabase.md, qdrant.md, neo4j.md) for recovery
